@@ -114,13 +114,16 @@ const paidColors = new Set([
   "179,185,209",    // Light Slate
 ]);
 
+// Utility: clamp zoom to a reasonable range
+const widthInput  = document.getElementById('widthInput');
+const heightInput = document.getElementById('heightInput');
 
 let padrao = [];
 
 function updatePadraoFromActiveButtons() {
   padrao = [];
   let colorActiveSave = [];
-  const activeButtons = document.querySelectorAll('#colors .toggle-color.active');
+  const activeButtons = document.querySelectorAll('#colors-free .toggle-color.active, #colors-paid .toggle-color.active');
   activeButtons.forEach(btn => {
     const bg = window.getComputedStyle(btn).backgroundColor;
     const rgbMatch = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
@@ -146,7 +149,7 @@ function showCustomToast(message) {
   if (!toastBtn) return;
   const originalText = toastBtn.textContent;
   toastBtn.textContent = message;
-  toastBtn.style.background = '#D60270';
+  toastBtn.style.background = '#ff4d4d';
   toastBtn.style.color = '#fff';
   setTimeout(() => {
     toastBtn.textContent = originalText;
@@ -245,47 +248,150 @@ function corMaisProxima(r, g, b) {
   return cor;
 }
 
-// Image processing
-function processarImagem() {
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imgData.data;
+// Dithering helper function
+function clampByte(v){ return v < 0 ? 0 : v > 255 ? 255 : v; }
+
+function processWithFloydSteinberg(ctx, palette, transparentHideActive) {
+  const w = canvas.width, h = canvas.height;
+  const img = ctx.getImageData(0, 0, w, h);
+  const d  = img.data;
+
+  // work in float copy to carry error
+  const buf = new Float32Array(d.length);
+  for (let i = 0; i < d.length; i++) buf[i] = d[i];
+
   const colorCounts = {};
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const a = data[i + 3];
-    const [nr, ng, nb] = corMaisProxima(r, g, b);
-    data[i] = nr;
-    data[i + 1] = ng;
-    data[i + 2] = nb;
-    if (a < 255 && a > 0) {
-      if (document.getElementById('transparentButton').classList.contains('active')) {
-        data[i + 3] = 0; // Make transparent if alpha is not fully opaque
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+
+      let r = buf[idx], g = buf[idx+1], b = buf[idx+2], a = buf[idx+3];
+
+      // Your alpha rule
+      if (a < 255 && a > 0) {
+        if (transparentHideActive) {
+          // make transparent and skip diffusion
+          d[idx+3] = 0;
+          d[idx] = d[idx+1] = d[idx+2] = 0;
+          continue;
+        } else {
+          a = 255;
+        }
       }
-      else {
-        data[i + 3] = 255; // Keep fully opaque if button is not active
+
+      // Quantize current pixel to nearest in palette
+      const [nr, ng, nb] = corMaisProxima(r|0, g|0, b|0);
+      d[idx]   = nr;
+      d[idx+1] = ng;
+      d[idx+2] = nb;
+      d[idx+3] = (a === 0) ? 0 : 255;
+
+      if (a !== 0) {
+        const key = `${nr},${ng},${nb}`;
+        colorCounts[key] = (colorCounts[key] || 0) + 1;
       }
-    }
-    if (a !== 0) {
-      const key = `${nr},${ng},${nb}`;
-      colorCounts[key] = (colorCounts[key] || 0) + 1;
+
+      // Error
+      const er = r - nr;
+      const eg = g - ng;
+      const eb = b - nb;
+
+      // Diffuse to neighbors (Floyd–Steinberg):
+      //   (x+1, y    ) += 7/16 * e
+      //   (x-1, y+1  ) += 3/16 * e
+      //   (x,   y+1  ) += 5/16 * e
+      //   (x+1, y+1  ) += 1/16 * e
+      // bounds checks inline
+      const push = (xx, yy, fr) => {
+        if (xx < 0 || xx >= w || yy < 0 || yy >= h) return;
+        const j = (yy * w + xx) * 4;
+        // only push into RGB; leave alpha as-is
+        buf[j  ] = clampByte(buf[j  ] + er * fr);
+        buf[j+1] = clampByte(buf[j+1] + eg * fr);
+        buf[j+2] = clampByte(buf[j+2] + eb * fr);
+      };
+
+      push(x+1, y  , 7/16);
+      push(x-1, y+1, 3/16);
+      push(x  , y+1, 5/16);
+      push(x+1, y+1, 1/16);
     }
   }
-  ctx.putImageData(imgData, 0, 0);
-  downloadLink.href = canvas.toDataURL("image/png");
-  downloadLink.download = `converted_${fileName}`;
-  showImageInfo(canvas.width, canvas.height);
-  showColorUsage(colorCounts);
 
+  ctx.putImageData(img, 0, 0);
+  return colorCounts;
+}
+
+//Zoom helper
+function fitZoomToViewport() {
+  const vp = document.getElementById('canvasViewport');
+  if (!processedCanvas || !vp) return 1;
+  const w = processedCanvas.width, h = processedCanvas.height;
+  const fit = Math.min(vp.clientWidth / w, vp.clientHeight / h, 1);
+  return (fit > 0 && isFinite(fit)) ? fit : 1;
+}
+
+
+// Image processing
+function processarImagem() {
+  if (!canvas || !ctx) return;
+
+  const transparentHideActive =
+    document.getElementById('transparentButton').classList.contains('active');
+
+  let colorCounts;
+
+  if (isDitheringOn && isDitheringOn()) {
+    // ---- DITHERED PATH ----
+    colorCounts = processWithFloydSteinberg(ctx, padrao, transparentHideActive);
+  } else {
+    // ---- NON-DITHERED PATH (your original loop) ----
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    colorCounts = {};
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+
+      const [nr, ng, nb] = corMaisProxima(r, g, b);
+      data[i]     = nr;
+      data[i + 1] = ng;
+      data[i + 2] = nb;
+
+      if (a < 255 && a > 0) {
+        data[i + 3] = transparentHideActive ? 0 : 255;
+      }
+
+      if (a !== 0) {
+        const key = `${nr},${ng},${nb}`;
+        colorCounts[key] = (colorCounts[key] || 0) + 1;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  // Keep processedCanvas in sync with what's on the main canvas
   if (!processedCanvas) {
     processedCanvas = document.createElement('canvas');
     processedCtx = processedCanvas.getContext('2d');
   }
-  processedCanvas.width = canvas.width;
+  processedCanvas.width  = canvas.width;
   processedCanvas.height = canvas.height;
-  processedCtx.putImageData(imgData, 0, 0);
+  processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+  processedCtx.drawImage(canvas, 0, 0);
+
+  // Update UI bits
+  downloadLink.href = canvas.toDataURL("image/png");
+  downloadLink.download = `converted_${fileName}`;
+  showImageInfo(canvas.width, canvas.height);
+  if (colorCounts) showColorUsage(colorCounts);
 }
+
 
 // Image info display
 function showImageInfo(width, height) {
@@ -351,12 +457,10 @@ function showColorUsage(colorCounts) {
 
 // --- Script for select All buttons ---
 
+// Free Colors
 document.addEventListener('DOMContentLoaded', () => {
   const masterBtn    = document.getElementById('unselect-all-free');
-  const freeButtons  = Array.from(document.querySelectorAll(
-    'button.toggle-color[data-type="free"]:not(#unselect-all-free)'
-  ));
-
+  const freeButtons  = Array.from(document.querySelectorAll('#colors-free .toggle-color[data-type="free"]'));
   function t(key) {
     const lang = getCurrentLang();
     return (translations[lang] || translations.en)[key];
@@ -380,29 +484,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const raw = localStorage.getItem('activeColors');
   let saved = [];
   if (raw !== null) {
-    try {
-      saved = JSON.parse(raw);
-    } catch(e) {
-      console.warn('couldn’t parse saved colors:', raw);
-    }
+    try { saved = JSON.parse(raw); } catch(e) { console.warn('couldn’t parse saved colors:', raw); }
   }
 
-  // apply saved (even if saved = [])
+  // Apply saved state or default to ON if none saved
+  const firstVisit = raw === null;
   freeButtons.forEach(b =>
-    b.classList.toggle('active', raw !== null ? saved.includes(b.id) : true)
+    b.classList.toggle('active', firstVisit ? true : saved.includes(b.id))
   );
 
-  // force-refresh the master button text now that classes are set
-  window.addEventListener('load', () => {
-  updateMasterLabel();
-});
+  // Update label now
+  window.addEventListener('load', () => { updateMasterLabel(); });
 
-  // now do your initial drawing
-  updatePadraoFromActiveButtons();
+  // If it's the first visit, don't save until user interacts
+  if (!firstVisit) {
+    updatePadraoFromActiveButtons();
+  }
 
   // ——— WIRING UP THE CLICK HANDLERS ———
   freeButtons.forEach(b => {
     b.addEventListener('click', () => {
+      b.classList.toggle('active');
+
       setTimeout(() => {
         updateMasterLabel();
         saveActiveColors();
@@ -429,27 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
 // Paid Colors
-
 document.addEventListener('DOMContentLoaded', () => {
-  const masterBtn   = document.getElementById('select-all-paid');
-  const paidButtons = Array.from(
-    document.querySelectorAll(
-      '#colors button.toggle-color[data-type="paid"]:not(#select-all-paid)'
-    )
-  );
-  if (!masterBtn) {
-    console.error('select-all-paid button not found');
-    return;
-  }
-
-  // translation helper
+  const masterBtn    = document.getElementById('select-all-paid');
+  const paidButtons  = Array.from(document.querySelectorAll('#colors-paid .toggle-color[data-type="paid"]'));
   function t(key) {
     const lang = getCurrentLang();
     return (translations[lang] || translations.en)[key];
   }
 
-  // Set the master button label based on whether *all* paid buttons are active
   function updateMasterLabel() {
     const allActive = paidButtons.every(b => b.classList.contains('active'));
     masterBtn.textContent = allActive
@@ -457,47 +549,38 @@ document.addEventListener('DOMContentLoaded', () => {
       : t('allButtonpaidSelect');
   }
 
-  // Persist the IDs of whichever paid buttons are active
-  function saveActivePaidColors() {
+  function saveActiveColorsPaid() {
     const activeIds = paidButtons
       .filter(b => b.classList.contains('active'))
       .map(b => b.id);
-    localStorage.setItem(
-      'activePaidColors',
-      JSON.stringify(activeIds)
-    );
+    localStorage.setItem('activeColorsPaid', JSON.stringify(activeIds));
   }
 
   // -- LOAD STATE --
-  const rawPaid = localStorage.getItem('activePaidColors');
-  let savedPaid = [];
-  if (rawPaid !== null) {
-    try {
-      savedPaid = JSON.parse(rawPaid);
-    } catch (e) {
-      console.warn('Could not parse activePaidColors:', rawPaid);
-    }
+  const raw = localStorage.getItem('activeColorsPaid');
+  let saved = [];
+  if (raw !== null) {
+    try { saved = JSON.parse(raw); } catch(e) { console.warn('couldn’t parse saved paid colors:', raw); }
   }
 
-  // If we have a saved array (even if empty), honor it; otherwise default *all off*
-  paidButtons.forEach(btn => {
-    const shouldBeActive = rawPaid !== null && savedPaid.includes(btn.id);
-    btn.classList.toggle('active', shouldBeActive);
-  });
+  // apply saved (default to OFF for paid if nothing saved)
+  paidButtons.forEach(b =>
+    b.classList.toggle('active', raw !== null ? saved.includes(b.id) : false)
+  );
 
-  // — ensure the master label is correct *after* any HTML fallback runs
-  setTimeout(updateMasterLabel, 0);
+  window.addEventListener('load', () => { updateMasterLabel(); });
 
+  // initial draw
   updatePadraoFromActiveButtons();
 
-  // -- WIRING UP THE CLICK HANDLERS --
+  // single-button toggle
+  paidButtons.forEach(b => {
+    b.addEventListener('click', () => {
+      b.classList.toggle('active');  // ✅ core change
 
-  // Clicking ANY paid-button individually…
-  paidButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
       setTimeout(() => {
         updateMasterLabel();
-        saveActivePaidColors();
+        saveActiveColorsPaid();
         updatePadraoFromActiveButtons();
         if (originalImage) {
           applyScale?.();
@@ -507,15 +590,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Clicking the master “select/unselect all paid”
   masterBtn.addEventListener('click', () => {
     const allActive = paidButtons.every(b => b.classList.contains('active'));
-    paidButtons.forEach(b =>
-      b.classList.toggle('active', !allActive)
-    );
+    paidButtons.forEach(b => b.classList.toggle('active', !allActive));
 
     updateMasterLabel();
-    saveActivePaidColors();
+    saveActiveColorsPaid();
     updatePadraoFromActiveButtons();
     if (originalImage) {
       applyScale?.();
@@ -523,6 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
 // --End of Script for buttons--
 
 // Scale, Zoom, and Dimension functionality
@@ -652,39 +733,66 @@ function applyScale() {
 
 // Core: zoom the processed image into the visible canvas
 function applyPreview() {
-  const zoom = parseFloat(zoomRange.value);
-  console.log('applyPreview called', {
-    zoom,
-    hasProcessedCanvas: !!processedCanvas,
-    pcw: processedCanvas?.width,
-    pch: processedCanvas?.height,
-    canvasBefore: { w: canvas.width, h: canvas.height }
-  });
+  let zoom = parseFloat(zoomRange?.value);
+  if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
 
   if (!processedCanvas) {
     console.warn('No processedCanvas, skipping preview');
     return;
   }
 
-  const pw = Math.round(processedCanvas.width * zoom);
-  const ph = Math.round(processedCanvas.height * zoom);
+  // no longer clamp zoom to fit — let user zoom out freely
+  const effectiveZoom = zoom;
 
+  const vp = document.getElementById('canvasViewport');
+  const baseW = processedCanvas.width;
+  const baseH = processedCanvas.height;
+
+  // keep viewport center while zooming
+  let cx = 0.5, cy = 0.5;
+  if (vp && canvas.offsetWidth && canvas.offsetHeight) {
+    cx = (vp.scrollLeft + vp.clientWidth  / 2) / Math.max(1, canvas.offsetWidth);
+    cy = (vp.scrollTop  + vp.clientHeight / 2) / Math.max(1, canvas.offsetHeight);
+  }
+
+  // target draw size
+  let pw = Math.max(1, Math.round(baseW * effectiveZoom));
+  let ph = Math.max(1, Math.round(baseH * effectiveZoom));
+
+  // draw (crisp pixels)
   canvas.width  = pw;
   canvas.height = ph;
   ctx.clearRect(0, 0, pw, ph);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(
-    processedCanvas,
-    0, 0,
-    processedCanvas.width,
-    processedCanvas.height,
-    0, 0,
-    pw, ph
-  );
+  ctx.drawImage(processedCanvas, 0, 0, baseW, baseH, 0, 0, pw, ph);
   ctx.imageSmoothingEnabled = true;
 
-  console.log('canvas resized to', canvas.width, canvas.height);
+  // element size so viewport can scroll/pan
+  canvas.style.width  = pw + 'px';
+  canvas.style.height = ph + 'px';
+
+  if (vp) {
+    const smallerThanViewport = pw <= vp.clientWidth && ph <= vp.clientHeight;
+
+    if (smallerThanViewport) {
+      // center image if smaller than viewport
+      vp.scrollLeft = 0;
+      vp.scrollTop  = 0;
+      vp.style.display = 'grid';
+      vp.style.placeContent = 'center';
+    } else {
+      // restore normal layout for panning
+      vp.style.display = '';
+      vp.style.placeContent = '';
+      vp.scrollLeft = Math.max(0, canvas.offsetWidth  * cx - vp.clientWidth  / 2);
+      vp.scrollTop  = Math.max(0, canvas.offsetHeight * cy - vp.clientHeight / 2);
+    }
+  }
+
+  // update label
+  zoomValue.textContent = effectiveZoom.toFixed(2) + 'x';
 }
+
 
 
 // When slider stops (or on change), actually re-scale & re-preview
@@ -693,33 +801,90 @@ scaleRange.addEventListener('change', () => {
   applyPreview();
 });
 
-// Handle image upload & setup
+// ---- SINGLE upload handler: fit-to-viewport + center on load ----
 upload.addEventListener('change', e => {
-  const file = e.target.files[0];
+  const file = e.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = evt => {
-    const img = new Image();
-    img.onload = () => {
-      originalImage   = img;
-      // seed canvas & controls
-      canvas.width    = img.width;
-      canvas.height   = img.height;
-      ctx.drawImage(img, 0, 0);
-      scaleRange.value = 1.0;
-      scaleValue.textContent = '1.00x';
-      zoomRange.value  = 1.0;
-      zoomValue.textContent  = '1.00x';
-      initDimensions();
+  fileName = file.name;
 
-      processarImagem();
+  const img = new Image();
+  img.onload = () => {
+    originalImage       = img;
+    currentImageWidth   = img.width;
+    currentImageHeight  = img.height;
 
-      applyPreview();
-    };
-    img.src = evt.target.result;
+    // seed canvas
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    // controls + info
+    scaleRange.value = 1.0;
+    scaleValue.textContent = '1.00x';
+    initDimensions?.();
+    showImageInfo(currentImageWidth, currentImageHeight);
+
+    // process -> fills processedCanvas
+    processarImagem?.();
+
+    // reset viewport scroll
+    const vp = document.getElementById('canvasViewport');
+    if (vp) { vp.scrollLeft = 0; vp.scrollTop = 0; }
+
+    // fit AFTER layout so vp sizes are correct
+    requestAnimationFrame(() => {
+      const MIN = 0.05;
+      const fit = fitZoomToViewport?.() ?? 1;   // contain
+      const z   = Math.max(fit, MIN);
+
+      zoomRange.min = '0.05';
+      zoomRange.value = z.toFixed(3);
+      zoomValue.textContent = z.toFixed(2) + 'x';
+
+      applyPreview?.(); // this will center if smaller than viewport
+    });
   };
-  reader.readAsDataURL(file);
+
+  // object URL is simpler/faster than FileReader
+  img.src = URL.createObjectURL(file);
 });
+
+
+
+// --- Drag & Drop Support ---
+(function () {
+  const dropTarget = document.querySelector('.custom-upload');
+  const fileInput = document.getElementById('upload');
+  if (!dropTarget || !fileInput) return;
+
+  // Highlight on dragover
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropTarget.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropTarget.classList.add('dragover');
+    });
+  });
+
+  // Remove highlight on dragleave/drop
+  ['dragleave', 'dragend', 'drop'].forEach(evt => {
+    dropTarget.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropTarget.classList.remove('dragover');
+    });
+  });
+
+  // Handle file drop
+  dropTarget.addEventListener('drop', e => {
+    const files = e.dataTransfer?.files;
+    if (!files?.length) return;
+    fileInput.files = files;
+    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
+
 
 // Reset controls on unload (optional)
 window.addEventListener('beforeunload', () => {
@@ -782,6 +947,10 @@ const translations = {
     scale: "Scale",
     transparentButton: "Hide Semi-Transparent Pixels",
     transparentButtonTitle: "When active, semi-transparent pixels will be made fully transparent, otherwise they will be fully opaque.",
+    zoomHint: "Ctrl + Scroll to zoom",
+    ditherButton: "Dither (recommended)",
+    uploadStrong: "Upload Image",
+    uploadSpan: "Click, paste or drag & drop",
   },
   pt: {
     title: "Conversor de Cores Wplace",
@@ -802,9 +971,13 @@ const translations = {
     allButtonpaidSelect: "Selecionar Todas as Cores Pagas 💧",
     allButtonpaidUnselect: "Desmarcar Todas as Cores Pagas 💧",
     zoom: "Zoom",
-    scale: "Escala",
+    scale: "Tamanho",
     transparentButton: "Ocultar Pixels Semitransparentes",
     transparentButtonTitle: "Remover Pixels Semitransparentes",
+    zoomHint: "Ctrl + scroll para ampliar",
+    ditherButton: "Dithering (recomendado)",
+    uploadStrong: "Carregar Imagem",
+    uploadSpan: "Clique, cole ou arraste e largue",
   },
   de: {
     title: "Wplace Farbkonverter",
@@ -827,7 +1000,11 @@ const translations = {
     zoom: "Zoom",
     scale: "Maßstab",
     transparentButton: "Halbtransparente Pixel ausblenden",
-    transparentButtonTitle: "Wenn aktiv, werden halbtransparente Pixel vollständig transparent, andernfalls vollständig undurchsichtig."
+    transparentButtonTitle: "Wenn aktiv, werden halbtransparente Pixel vollständig transparent, andernfalls vollständig undurchsichtig.",
+    zoomHint: "Strg + Scroll zum Zoomen",
+    ditherButton: "Dithering (empfohlen)",
+    uploadStrong: "Bild hochladen",
+    uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
   },
   es: {
     title: "Convertidor de Colores Wplace",
@@ -850,7 +1027,11 @@ const translations = {
     zoom: "Zoom",
     scale: "Escala",
     transparentButton: "Ocultar píxeles semitransparentes",
-    transparentButtonTitle: "Cuando está activo, los píxeles semitransparentes se vuelven completamente transparentes, de lo contrario, completamente opacos."
+    transparentButtonTitle: "Cuando está activo, los píxeles semitransparentes se vuelven completamente transparentes, de lo contrario, completamente opacos.",
+    zoomHint: "Ctrl + desplazamiento para acercar/alejar",
+    ditherButton: "Tramado (recomendado)",
+    uploadStrong: "Subir imagen",
+    uploadSpan: "Haz clic, pega o arrastra y suelta",
   },
   fr: {
     title: "Convertisseur de Couleurs Wplace",
@@ -873,7 +1054,11 @@ const translations = {
     zoom: "Zoom",
     scale: "Échelle",
     transparentButton: "Masquer les pixels semi-transparents",
-    transparentButtonTitle: "Lorsque cette option est activée, les pixels semi-transparents deviennent complètement transparents, sinon ils restent complètement opaques."
+    transparentButtonTitle: "Lorsque cette option est activée, les pixels semi-transparents deviennent complètement transparents, sinon ils restent complètement opaques.",
+    zoomHint: "Ctrl + molette pour zoomer",
+    ditherButton: "Tramage (recommandé)",
+    uploadStrong: "Télécharger une image",
+    uploadSpan: "Cliquez, collez ou glissez-déposez",
   },
   uk: {
     title: "Конвертер кольорів Wplace",
@@ -896,7 +1081,11 @@ const translations = {
     zoom: "Зум",
     scale: "Масштаб",
     transparentButton: "Сховати напівпрозорі пікселі",
-    transparentButtonTitle: "Коли активовано, напівпрозорі пікселі стають повністю прозорими, інакше вони залишаються повністю непрозорими."
+    transparentButtonTitle: "Коли активовано, напівпрозорі пікселі стають повністю прозорими, інакше вони залишаються повністю непрозорими.",
+    zoomHint: "Ctrl + прокрутка для масштабування",
+    ditherButton: "Дизеринг (рекомендовано)",
+    uploadStrong: "Завантажити зображення",
+    uploadSpan: "Натисніть, вставте або перетягніть",
   },
   vi: {
     title: "Trình chuyển đổi màu Wplace",
@@ -919,7 +1108,11 @@ const translations = {
     zoom: "Thu phóng",
     scale: "Tỉ lệ",
     transparentButton: "Ẩn các điểm ảnh bán trong suốt",
-    transparentButtonTitle: "Khi bật, các điểm ảnh bán trong suốt sẽ trở nên hoàn toàn trong suốt, nếu không sẽ hoàn toàn đục."
+    transparentButtonTitle: "Khi bật, các điểm ảnh bán trong suốt sẽ trở nên hoàn toàn trong suốt, nếu không sẽ hoàn toàn đục.",
+    zoomHint: "Ctrl + cuộn để thu phóng",
+    ditherButton: "Dithering (khuyến nghị)",
+    uploadStrong: "Tải hình ảnh",
+    uploadSpan: "Nhấp, dán hoặc kéo và thả",
   },
   ja: {
     title: "Wplace カラーコンバーター",
@@ -942,7 +1135,11 @@ const translations = {
     zoom: "ズーム",
     scale: "スケール",
     transparentButton: "半透明ピクセルを非表示",
-    transparentButtonTitle: "有効にすると、半透明ピクセルは完全に透明になり、無効にすると完全に不透明になります。"
+    transparentButtonTitle: "有効にすると、半透明ピクセルは完全に透明になり、無効にすると完全に不透明になります。",
+    zoomHint: "Ctrl + スクロールでズーム",
+    ditherButton: "ディザリング（推奨）",
+    uploadStrong: "画像をアップロード",
+    uploadSpan: "クリック、貼り付け、またはドラッグ＆ドロップ",
   },
   pl: {
     title: "Konwerter Kolorów Wplace",
@@ -965,7 +1162,11 @@ const translations = {
     zoom: "Powiększenie",
     scale: "Skala",
     transparentButton: "Ukryj półprzezroczyste piksele",
-    transparentButtonTitle: "Gdy aktywne, półprzezroczyste piksele będą całkowicie przezroczyste, w przeciwnym razie będą całkowicie nieprzezroczyste."
+    transparentButtonTitle: "Gdy aktywne, półprzezroczyste piksele będą całkowicie przezroczyste, w przeciwnym razie będą całkowicie nieprzezroczyste.",
+    zoomHint: "Ctrl + przewijanie, aby powiększyć",
+    ditherButton: "Dithering (zalecane)",
+    uploadStrong: "Prześlij obraz",
+    uploadSpan: "Kliknij, wklej lub przeciągnij i upuść",
   },
   de_CH: {
     title: "Wplace Farbkonverter",
@@ -988,7 +1189,11 @@ const translations = {
     zoom: "Zoom",
     scale: "Massstab",
     transparentButton: "Halbtransparente Pixel ausblenden",
-    transparentButtonTitle: "Wenn aktiv, werden halbtransparente Pixel vollständig transparent, andernfalls vollständig undurchsichtig."
+    transparentButtonTitle: "Wenn aktiv, werden halbtransparente Pixel vollständig transparent, andernfalls vollständig undurchsichtig.",
+    zoomHint: "Strg + Scroll zum Zoomen",
+    ditherButton: "Dithering (empfohlen)",
+    uploadStrong: "Bild hochladen",
+    uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
   },
   nl: {
     title: "Wplace Kleurconverter",
@@ -1008,10 +1213,10 @@ const translations = {
     allButtonfreeUnselect: "Deselecteer alle gratis kleuren",
     allButtonpaidSelect: "Selecteer alle 💧betaalde kleuren",
     allButtonpaidUnselect: "Deselecteer alle 💧betaalde kleuren",
-    zoom: "Zoom",
-    scale: "Schaal",
-    transparentButton: "Verberg half-transparante pixels",
-    transparentButtonTitle: "Wanneer ingeschakeld, worden half-transparante pixels volledig transparant, anders blijven ze volledig ondoorzichtig."
+    zoomHint: "Ctrl + scroll om te zoomen",
+    ditherButton: "Dithering (aanbevolen)",
+    uploadStrong: "Afbeelding uploaden",
+    uploadSpan: "Klik, plak of sleep en zet neer",
   },
   ru: {
     title: "Конвертер цветов Wplace",
@@ -1034,7 +1239,11 @@ const translations = {
     zoom: "Зум",
     scale: "Масштаб",
     transparentButton: "Скрыть полупрозрачные пиксели",
-    transparentButtonTitle: "Когда включено, полупрозрачные пиксели становятся полностью прозрачными, иначе они остаются полностью непрозрачными."
+    transparentButtonTitle: "Когда включено, полупрозрачные пиксели становятся полностью прозрачными, иначе они остаются полностью непрозрачными.",
+    zoomHint: "Ctrl + прокрутка для масштабирования",
+    ditherButton: "Дизеринг (рекомендуется)",
+    uploadStrong: "Загрузить изображение",
+    uploadSpan: "Нажмите, вставьте или перетащите",
   },
   tr: {
     title: "Wplace Renk Dönüştürücü",
@@ -1057,7 +1266,11 @@ const translations = {
     zoom: "Yakınlaştır",
     scale: "Ölçek",
     transparentButton: "Yarı saydam pikselleri gizle",
-    transparentButtonTitle: "Aktif olduğunda, yarı saydam pikseller tamamen saydam hale gelir, aksi takdirde tamamen opak kalır."
+    transparentButtonTitle: "Aktif olduğunda, yarı saydam pikseller tamamen saydam hale gelir, aksi takdirde tamamen opak kalır.",
+    zoomHint: "Ctrl + kaydırma ile yakınlaştır",
+    ditherButton: "Dithering (önerilir)",
+    uploadStrong: "Resim Yükle",
+    uploadSpan: "Tıklayın, yapıştırın veya sürükleyip bırakın",
   }
 };
 
@@ -1160,32 +1373,6 @@ function showImageInfo(width, height) {
 // Refresh width/height/area display
 showImageInfo(currentImageWidth, currentImageHeight);
 
-// When loading an image, update the global size variables
-upload.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  fileName = file.name;
-  const reader = new FileReader();
-  reader.onload = evt => {
-    const img = new Image();
-    img.onload = () => {
-      originalImage = img;
-      currentImageWidth = img.width;
-      currentImageHeight = img.height;
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      processarImagem();
-
-      // Show info for the loaded image
-      showImageInfo(currentImageWidth, currentImageHeight);
-    };
-    img.src = evt.target.result;
-  };
-  reader.readAsDataURL(file);
-});
-
 // Transparent button functionality
 document.getElementById('transparentButton').addEventListener('click', function () {
   this.classList.toggle('active');
@@ -1221,3 +1408,119 @@ console.log(document.getElementById("meta-og-title"));
   // Call any additional UI update
   showImageInfo(currentImageWidth, currentImageHeight);
 }
+
+// --- Extra viewport interactions: drag-to-pan + Ctrl/Meta + wheel zoom ---
+(function enhanceViewport() {
+  const vp = document.getElementById('canvasViewport');
+  const cv = document.getElementById('canvas');
+  if (!vp || !cv) return;
+
+  // ---- Drag-to-pan ----
+  let down = false, sx = 0, sy = 0, sl = 0, st = 0;
+  vp.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    down = true;
+    sx = e.clientX; sy = e.clientY;
+    sl = vp.scrollLeft; st = vp.scrollTop;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!down) return;
+    vp.scrollLeft = sl - (e.clientX - sx);
+    vp.scrollTop  = st - (e.clientY - sy);
+  });
+  window.addEventListener('mouseup', () => { down = false; });
+
+  // ---- Robust Ctrl/Meta + wheel zoom (log-scale, min 0.05) ----
+  const WHEEL_OPTS = { passive: false };
+  const handleZoomWheel = (e) => {
+    const wantsZoom = e.ctrlKey || e.metaKey; // Ctrl on Win/Linux, ⌘ on macOS
+    if (!wantsZoom) return;
+
+    // Stop browser page zoom
+    e.preventDefault();
+
+    const slider = document.getElementById('zoomRange');
+    if (!slider) return;
+
+    const MIN = 0.05;
+    const MAX = parseFloat(slider.max) || 10;
+    let cur    = parseFloat(slider.value) || 1;
+
+    // log-scale step (smooth & never stuck at tiny values)
+    const STEP = 0.01;
+    let logZ = Math.log(Math.max(cur, MIN));   // floor at MIN so recovery works
+    logZ += (e.deltaY < 0 ? +STEP : -STEP);
+    let next = Math.exp(logZ);
+
+    if (next < MIN) next = MIN;
+    if (next > MAX) next = MAX;
+
+    slider.value = next.toFixed(3);
+    applyPreview();
+  };
+
+  // Attach to BOTH viewport and canvas so it works wherever the cursor is
+  vp.addEventListener('wheel', handleZoomWheel, WHEEL_OPTS);
+  cv.addEventListener('wheel', handleZoomWheel, WHEEL_OPTS);
+
+  // Also enforce MIN on manual slider moves
+  const slider = document.getElementById('zoomRange');
+  if (slider) {
+    slider.min = '0.05'; // ensure HTML min matches the logic
+    slider.addEventListener('input', () => {
+      const MIN = 0.05;
+      const MAX = parseFloat(slider.max) || 10;
+      let z = parseFloat(slider.value) || 1;
+      if (z < MIN) z = MIN;
+      if (z > MAX) z = MAX;
+      slider.value = z.toFixed(3);
+      applyPreview();
+    });
+  }
+})();
+
+// --- Dithering toggle ---
+const DITHER_KEY = 'ditherOn';
+
+function isDitheringOn() {
+  const v = localStorage.getItem(DITHER_KEY);
+  return v === null ? true : v === 'true';   // default ON
+}
+
+(function initDitherButton(){
+  const btn = document.getElementById('ditherButton');
+  if (!btn) return;
+
+  // Determine initial state (default ON first time)
+  const saved = localStorage.getItem(DITHER_KEY);
+  const on = saved === null ? true : saved === 'true';
+  if (saved === null) localStorage.setItem(DITHER_KEY, 'true');
+
+  // Sync UI
+  btn.classList.toggle('active', on);
+
+  // Optional title via i18n
+  const lang = (typeof getCurrentLang === 'function' && getCurrentLang()) || 'en';
+  if (translations?.[lang]?.ditherButtonTitle) {
+    btn.title = translations[lang].ditherButtonTitle;
+  }
+
+  // Click handler
+  btn.addEventListener('click', () => {
+    const next = !btn.classList.contains('active');
+    btn.classList.toggle('active', next);
+    localStorage.setItem(DITHER_KEY, String(next));
+
+    if (originalImage) {
+      applyScale?.();
+      applyPreview?.();
+    }
+  });
+
+  // 🔹 Force reprocess if active on load and image already loaded
+  if (on && originalImage) {
+    applyScale?.();
+    applyPreview?.();
+  }
+})();

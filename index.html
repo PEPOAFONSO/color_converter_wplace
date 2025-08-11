@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta name="google-site-verification" content="wHXxUrLL9Fnw-T9w50zILQ4PlwFotRNyXsA0fzRBmWU" />
-  <meta charset="UTF-8">
-  <meta property="og:title" content="Wplace Color Converter">
-  <meta property="og:description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more...">
-  <meta name="description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more..." />
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/">
-  <meta name="theme-color" content="#D60270">
-  <title>Wplace Color Converter</title>
-  <link rel="stylesheet" href="main.css">
-<link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.png?v=2" type="image/png" sizes="any">
-<link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.ico?v=2" type="image/x-icon">
+<meta name="google-site-verification" content="wHXxUrLL9Fnw-T9w50zILQ4PlwFotRNyXsA0fzRBmWU" />
+<meta charset="UTF-8">
+<meta property="og:title" content="Wplace Color Converter">
+<meta property="og:description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more...">
+<meta name="description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more..." />
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#D60270">
+<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/">
+
+<title>Wplace Color Converter</title>
+<!-- Standard favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="https://pepoafonso.github.io/color_converter_wplace/favicon.png">
+<link rel="icon" type="image/x-icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.ico">
+
+<!-- Apple Touch Icon (iOS Home Screen) -->
+<link rel="apple-touch-icon" sizes="180x180" href="https://pepoafonso.github.io/color_converter_wplace/apple-touch-icon.png">
 
 <link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/">
-
   <!-- hreflang links -->
 <link rel="alternate" hreflang="en"    href="https://pepoafonso.github.io/color_converter_wplace/" />
 <link rel="alternate" hreflang="pt"    href="https://pepoafonso.github.io/color_converter_wplace/pt/" />
@@ -32,79 +36,132 @@
 <link rel="alternate" hreflang="ru"    href="https://pepoafonso.github.io/color_converter_wplace/ru/" />
 <link rel="alternate" hreflang="tr"    href="https://pepoafonso.github.io/color_converter_wplace/tr/" />
 <link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css" />
 </head>
-
 <body>
-<div style="position: absolute; left: 10px; display: flex; flex-direction: column; align-items: center;" target="blank">
-  <a target="_blank"; class="buttonIndex" href="https://wplace.live/">Wplace</a>
-  <a target="_blank"; class="buttonIndex-bottom" href="https://github.com/PEPOAFONSO/color_converter_wplace">Github</a>
-</div>
+  <!-- Header / Nav -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="favicon.png" alt="" class="brand-mark" />
+        <span class="brand-name">Wplace Color Converter</span>
+      </a>
 
-<div class="lang_select" style="position: absolute; right: 20px;top: 20px;">
-  <label for="lang-select">Language:</label>
-  <select id="lang-select">
-    <option value="en">🇺🇸 English</option>
-    <option value="pt">🇵🇹 Português 🇧🇷</option>
-    <option value="de">🇩🇪 Deutsch</option>
-    <option value="es">🇪🇸 Español</option>
-    <option value="fr">🇫🇷 Français</option>
-    <option value="uk">🇺🇦 Українська</option>
-    <option value="vi">🇻🇳 Tiếng Việt</option>
-    <option value="pl">🇵🇱 Polski</option>
-    <option value="ja">🇯🇵 日本語</option>
-    <option value="de_CH">🇨🇭 Deutsch (Schweiz)</option>
-    <option value="nl">🇳🇱 Nederlands</option>
-    <option value="ru">🇷🇺 Русский</option>
-    <option value="tr">🇹🇷 Türkçe</option>
-  </select>
-</div>
+      <nav class="primary-nav" aria-label="Primary">
 
-  <h2 data-i18n="title">Wplace Color Converter</h2>
+      </nav>
 
-<input type="file" id="upload" accept="image/*"><br>
+      <div class="nav-tools">
+        <select id="lang-select">
+          <option value="en">🇺🇸 English</option>
+          <option value="pt">🇵🇹 Português 🇧🇷</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="uk">🇺🇦 Українська</option>
+          <option value="vi">🇻🇳 Tiếng Việt</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="de_CH">🇨🇭 Deutsch (Schweiz)</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+        </select>
 
-  <canvas id="canvas"></canvas>
+        <button class="nav-burger" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-<div class="dimensions">
-  <div class="dimension-input">
-    <label for="widthInput" data-i18n="width">Width:</label>
-    <input type="number" id="widthInput">
-  </div>
-  <div class="dimension-input">
-    <label for="heightInput" data-i18n="height">Height:</label>
-    <input type="number" id="heightInput">
-  </div>
-  <div class="dimension-input">
-  <label data-i18n="area">Area:</label>
-  <div class="area-box" id="area"></div>
-  </div>
-</div>
+  <!-- Page -->
+  <main class="container app">
+    <!-- Left column: Controls -->
+    <section class="panel-left">
+      <div class="card">
+        <div class="custom-upload">
+          <input type="file" id="upload" accept="image/*">
+          <label for="upload" class="upload-box">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">
+              <strong data-i18n="uploadStrong">Upload Image</strong>
+              <span data-i18n="uploadSpan">Click, paste or drag & drop</span>
+            </div>
+          </label>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="scroll-bar">
+          <label for="scaleRange" data-i18n="scale">Scale</label>
+          <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
+          <span id="scaleValue">1.00x</span>
+        </div>
 
-<div class="scroll-bar">
-  <label for="scaleRange" data-i18n="scale">Scale: </label>
-  <input type="range" id="scaleRange" min="0.01" max="5" step="0.01" value="1">
-  <span id="scaleValue">1.00x</span>
-</div>
+        <div class="dimensions">
+          <div class="dimension-input">
+            <label for="widthInput" data-i18n="width">Width</label>
+            <input type="number" id="widthInput">
+          </div>
+          <div class="dimension-input">
+            <label for="heightInput" data-i18n="height">Height</label>
+            <input type="number" id="heightInput">
+          </div>
+          <div class="dimension-input">
+            <label data-i18n="area">Area</label>
+            <div class="area-box" id="area"></div>
+          </div>
+        </div>
+      <div style="display:flex; justify-content:center; align-items:center; margin-top: 10px ; flex-wrap:wrap; width:100%;">
+        <button data-i18n="transparentButton" data-i18n-title="transparentButtonTitle"
+                id="transparentButton" class="btn btn-toggle">
+          Hide Semi-Transparent Pixels
+        </button>
+      </div>
+            <div style="display:flex; justify-content:center; align-items:center;margin-top: 5px ; flex-wrap:wrap; width:100%;">
+        <button data-i18n="ditherButton"
+                id="ditherButton" class="btn btn-toggle active">
+          Dithering (Recommended)
+        </button>
+      </div>
+      </div>
+    </section>
 
-  <div class="scroll-bar">
-    <label for="zoomRange" data-i18n="zoom">Zoom: </label>
-    <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
-    <span id="zoomValue">1.00x</span>
-  </div><br>
+    <!-- Right column: Canvas / Actions -->
+    <div class="canvas-wrap card">
+      <div class="canvas-viewport" id="canvasViewport">
+        <canvas id="canvas"></canvas>
+      </div>
 
-  <div>
-    <button data-i18n="transparentButton" data-i18n-title="transparentButtonTitle" title="bla bal bla" id="transparentButton" class="toggle-color" style="background: rgb(0,0,0); color: #fff;">Remove Semi-transparent Pixels</button>
-  </div>
+      <!-- visual separator + zoom -->
+      <div class="scroll-bar">
+        <label for="zoomRange" data-i18n="zoom">Zoom</label>
+        <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
+        <span id="zoomValue">1.00x</span>
+        <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
+        Ctrl + Scroll to zoom
+        </small>
+      </div>
 
-  <div class="row">
-    <a id="download" class="button" href="#" data-i18n="download">Download Image</a>
-    <a id="clipboard" class="button" data-i18n="clipboard">Copy to Clipboard</a>
-  </div>
+      <div class="actions">
+        <a id="download" class="btn" href="#" data-i18n="download">Download Image</a>
+        <button id="clipboard" class="btn" data-i18n="clipboard">Copy to Clipboard</button>
+      </div>
+    </div>
 
-  <p data-i18n="freeColors">Free Colors:</p>
-  <button class="toggle-color" data-type=free style="background: rgb(0,0,0); color: #fff;" id="unselect-all-free" data-i18n="allButtonfreeUnselect">Unselect All Free Colors</button>
-  <div id="colors">
+</section>
+
+    <!-- Bottom line: Color Selection -->
+    <section class="panel panel-colors">
+    <!-- Free (left) -->
+    <div class="card">
+      <p class="section-title" data-i18n="freeColors">Free Colors</p>
+      <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
+        Unselect All Free Colors
+      </button>
+      <div id="colors-free" class="chips">
     <button id="1" class="toggle-color active" data-type=free style="background: rgb(0,0,0); color: #fff;" title="Black: rgb(0, 0, 0)">Black</button>
     <button id="2" class="toggle-color active" data-type=free style="background: rgb(60,60,60); color: #fff;" title="Dark Gray: rgb(60, 60, 60)">Dark Gray</button>
     <button id="3" class="toggle-color active" data-type=free style="background: rgb(120,120,120);" title="Gray: rgb(120, 120, 120)">Gray</button>
@@ -136,11 +193,16 @@
     <button id="29" class="toggle-color active" data-type=free style="background: rgb(104,70,52); color: #fff;" title="Dark Brown: rgb(104, 70, 52)">Dark Brown</button>
     <button id="30" class="toggle-color active" data-type=free style="background: rgb(149,104,42);" title="Brown: rgb(149, 104, 42)">Brown</button>
     <button id="31" class="toggle-color active" data-type=free style="background: rgb(248,178,119);" title="Beige: rgb(248, 178, 119)">Beige</button> 
-  </div>
+      </div>
+    </div>
 
-  <p data-i18n="paidColors">Paid Colors (2000💧each):</p>
-    <button class="toggle-color" data-type=paid style="background: rgb(0,0,0); color: #fff;" id="select-all-paid" data-i18n="allButtonpaidSelect">Select All 💧Paid Colors</button>
-  <div id="colors">
+    <!-- Paid (right) -->
+    <div class="card">
+      <p class="section-title" data-i18n="paidColors">Paid Colors (2000💧each)</p>
+      <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
+        Select All 💧Paid Colors
+      </button>
+      <div id="colors-paid" class="chips">
     <button id="33" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
     <button id="34" class="toggle-color" data-type=paid style="background: rgb(165,14,30); color: #fff;" title="Dark Red: rgb(165,14,30)">Dark Red</button>
     <button id="35" class="toggle-color" data-type=paid style="background: rgb(250,128,114);" title="Light Red: rgb(250, 128, 114)">Light Red</button>
@@ -173,10 +235,43 @@
     <button id="62" class="toggle-color" data-type=paid style="background: rgb(51,57,65); color: #fff;" title="Dark Slate: rgb(51, 57, 65)">Dark Slate</button>
     <button id="63" class="toggle-color" data-type=paid style="background: rgb(109,117,141);" title="Slate: rgb(109, 117, 141)">Slate</button>
     <button id="64" class="toggle-color" data-type=paid style="background: rgb(179,185,209);" title="Light Slate: rgb(179, 185, 209)">Light Slate</button> 
+      </div>
+    </div>
+
+    <!-- Color List -->
+    <div id="color-list" class="card span-2"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-content">
+    <small>
+      &copy; Wplace Color Converter —
+      <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
+        Copyright (c) <span id="year"></span> PEPOAFONSO
+      </a>
+    </small>
+
+    <div class="footer-links">
+      <a class="nav-link" target="_blank" href="https://wplace.live/">Wplace</a>
+      <a class="nav-link" target="_blank" href="https://github.com/PEPOAFONSO/color_converter_wplace">GitHub</a>
+    </div>
   </div>
-  <div id="color-list"></div>
-
+</footer>
   <script src="main.js"></script>
+  <script>
+    // Footer year
+    document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
+    // Mobile burger
+    const burger = document.querySelector('.nav-burger');
+    const nav = document.querySelector('.primary-nav');
+    if (burger && nav) {
+      burger.addEventListener('click', () => {
+        const open = nav.style.display === 'flex';
+        nav.style.display = open ? 'none' : 'flex';
+        burger.setAttribute('aria-expanded', String(!open));
+      });
+    }
+  </script>
 </body>
-
 </html>
