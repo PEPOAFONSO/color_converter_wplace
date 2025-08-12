@@ -637,60 +637,93 @@ zoomRange.addEventListener('input', () => {
 });
 
 
-// When user types a new width
-widthInput.addEventListener('input', () => {
+// ---------- Deferred validation for width/height ----------
+
+const TYPE_PAUSE_MS = 500; // commit after short pause
+let widthDebounce  = null;
+let heightDebounce = null;
+
+// Helpers to safely parse and clamp against max scale
+function commitFromWidth() {
   if (!originalImage) return;
 
-  // 1) parse and clamp width
-  const rawW = parseInt(widthInput.value, 10) || 0;
-  const maxScale = parseFloat(scaleRange.max);                // e.g. 5
-  const maxW = Math.round(originalImage.width * maxScale);    // maximum allowed width
-  const newW = Math.min(Math.max(rawW, 1), maxW);              // clamp to [1, maxW]
+  const raw = widthInput.value.trim();
+  if (raw === '') return;               // allow empty while typing
 
-  // 2) write back the clamped value so the user sees it
-  widthInput.value = newW;
+  const reqW = parseInt(raw, 10);
+  if (!Number.isFinite(reqW)) return;
 
-  // 3) compute the scale and corresponding height
+  const maxScale = parseFloat(scaleRange.max) || 5;
+  const maxW = Math.round(originalImage.width * maxScale);
+  const newW = Math.min(Math.max(reqW, 1), maxW);
+
   const scale = newW / originalImage.width;
   const newH  = Math.round(originalImage.height * scale);
 
-  // 4) sync other controls
-  heightInput.value      = newH;
-  scaleRange.value       = scale.toFixed(2);
-  scaleValue.textContent = scale.toFixed(2) + 'x';
+  // sync UI once
+  widthInput.value        = newW;
+  heightInput.value       = newH;
+  scaleRange.value        = scale.toFixed(2);
+  scaleValue.textContent  = scale.toFixed(2) + 'x';
 
-  // 5) redraw
   applyScale();
   applyPreview();
-});
+}
 
-
-// When user types a new height
-heightInput.addEventListener('input', () => {
+function commitFromHeight() {
   if (!originalImage) return;
 
-  // 1) parse and clamp height
-  const rawH = parseInt(heightInput.value, 10) || 0;
-  const maxScale = parseFloat(scaleRange.max);                 // e.g. 5
-  const maxH = Math.round(originalImage.height * maxScale);    // maximum allowed height
-  const newH = Math.min(Math.max(rawH, 1), maxH);              // clamp to [1, maxH]
+  const raw = heightInput.value.trim();
+  if (raw === '') return;
 
-  // 2) write back the clamped value so the user sees it
-  heightInput.value = newH;
+  const reqH = parseInt(raw, 10);
+  if (!Number.isFinite(reqH)) return;
 
-  // 3) compute the scale and corresponding width
+  const maxScale = parseFloat(scaleRange.max) || 5;
+  const maxH = Math.round(originalImage.height * maxScale);
+  const newH = Math.min(Math.max(reqH, 1), maxH);
+
   const scale = newH / originalImage.height;
   const newW  = Math.round(originalImage.width * scale);
 
-  // 4) sync other controls
-  widthInput.value       = newW;
-  scaleRange.value       = scale.toFixed(2);
-  scaleValue.textContent = scale.toFixed(2) + 'x';
+  heightInput.value       = newH;
+  widthInput.value        = newW;
+  scaleRange.value        = scale.toFixed(2);
+  scaleValue.textContent  = scale.toFixed(2) + 'x';
 
-  // 5) redraw
   applyScale();
   applyPreview();
+}
+
+// Ignore commits mid‑composition (IME)
+function cancelWidthDebounce(){ if (widthDebounce)  { clearTimeout(widthDebounce);  widthDebounce  = null; } }
+function cancelHeightDebounce(){ if (heightDebounce){ clearTimeout(heightDebounce); heightDebounce = null; } }
+
+widthInput.addEventListener('compositionstart', cancelWidthDebounce);
+heightInput.addEventListener('compositionstart', cancelHeightDebounce);
+widthInput.addEventListener('compositionend',   () => { commitFromWidth();  });
+heightInput.addEventListener('compositionend',  () => { commitFromHeight(); });
+
+// When user types a new width
+widthInput.addEventListener('input', () => {
+  cancelWidthDebounce();
+  widthDebounce = setTimeout(commitFromWidth, TYPE_PAUSE_MS);
 });
+widthInput.addEventListener('blur', commitFromWidth);
+widthInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') commitFromWidth();
+});
+
+// When user types a new height
+heightInput.addEventListener('input', () => {
+  cancelHeightDebounce();
+  heightDebounce = setTimeout(commitFromHeight, TYPE_PAUSE_MS);
+});
+heightInput.addEventListener('blur', commitFromHeight);
+heightInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') commitFromHeight();
+});
+
 
 // Core: scale the original image into a temp canvas and draw it
 function applyScale() {
