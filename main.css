@@ -68,7 +68,7 @@ body {
   height:64px; display:flex; align-items:center; gap:16px;
 }
 .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text)}
-.brand-mark{width:24px; height:24px; border-radius:6px}
+.brand-mark{width:42px; height:42px; border-radius:6px}
 .brand-name{font-weight:900; letter-spacing:.3px; align-items: left;}
 
 .primary-nav{margin-left:auto; display:flex; gap:12px;}
@@ -204,7 +204,7 @@ h2#title, h2 {
   padding: 30px 20px;
   border: 2px dashed var(--brand);
   border-radius: var(--radius);
-  background: linear-gradient(160deg, rgba(0,234,255,0.05), rgba(45,137,239,0.05));
+  background: linear-gradient(160deg, rgba(0, 149, 255, 0.1), rgba(0, 149, 255, 0.1));
   color: var(--text);
   text-align: center;
   cursor: pointer;
