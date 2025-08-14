@@ -1518,17 +1518,17 @@ const DITHER_KEY = 'ditherOn';
 
 function isDitheringOn() {
   const v = localStorage.getItem(DITHER_KEY);
-  return v === null ? true : v === 'true';   // default ON
+  return v === null ? false : v === 'true';   // default OFF
 }
 
 (function initDitherButton(){
   const btn = document.getElementById('ditherButton');
   if (!btn) return;
 
-  // Determine initial state (default ON first time)
+  // Determine initial state (default OFF first time)
   const saved = localStorage.getItem(DITHER_KEY);
-  const on = saved === null ? true : saved === 'true';
-  if (saved === null) localStorage.setItem(DITHER_KEY, 'true');
+  const on = saved === null ? false : saved === 'true';
+  if (saved === null) localStorage.setItem(DITHER_KEY, 'false');
 
   // Sync UI
   btn.classList.toggle('active', on);
