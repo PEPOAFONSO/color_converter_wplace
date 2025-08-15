@@ -251,6 +251,55 @@ h2#title, h2 {
   color: var(--brand);
 }
 
+/* Scale arrow controls */
+.scale-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.btn-scale-arrow {
+  width: 40px;
+  height: 32px;
+  background: var(--btn-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-scale-arrow:hover {
+  background: var(--btn-primary-hover);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-scale-arrow:active {
+  transform: scale(0.95);
+}
+
+.btn-scale-arrow:disabled {
+  background: #444;
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-scale-arrow span {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
 /* dimensions (keeps your original look) */
 .dimensions { display:flex; gap: 1.5rem; justify-content: center; }
 .dimension-input { display:flex; flex-direction:column; align-items:center; }
@@ -451,6 +500,10 @@ main { flex: 1; } /* ensure body gradient fills page */
   .card{ padding: 14px; margin: 6px 0; }
   .scroll-bar { gap: 8px; }
   #scaleRange, #zoomRange{ width: 100%; }
+  
+  /* Scale controls mobile adjustments */
+  .scale-controls { gap: 8px; margin: 6px 0; }
+  .btn-scale-arrow { width: 36px; height: 30px; font-size: 0.9rem; }
 
   /* 4) Canvas: full width, saner height */
   .canvas-viewport{
