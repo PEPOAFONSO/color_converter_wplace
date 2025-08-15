@@ -612,6 +612,10 @@ const scaleValue   = document.getElementById('scaleValue');
 const zoomRange    = document.getElementById('zoomRange');
 const zoomValue    = document.getElementById('zoomValue');
 
+// Scale arrow controls
+const scaleDecrease = document.getElementById('scaleDecrease');
+const scaleIncrease = document.getElementById('scaleIncrease');
+
 let originalImage     = null;
 let scaledCanvas      = null;
 let scaledCtx         = null;
@@ -834,6 +838,65 @@ scaleRange.addEventListener('change', () => {
   applyPreview();
 });
 
+// Scale arrow button functionality
+function adjustScale(delta) {
+  if (!scaleRange) return;
+  
+  const currentScale = parseFloat(scaleRange.value) || 1;
+  const minScale = parseFloat(scaleRange.min) || 0.001;
+  const maxScale = parseFloat(scaleRange.max) || 5;
+  
+  // Calculate new scale with 0.01 precision
+  const newScale = Math.round((currentScale + delta) * 100) / 100;
+  
+  // Clamp to valid range
+  const clampedScale = Math.max(minScale, Math.min(maxScale, newScale));
+  
+  // Update UI
+  scaleRange.value = clampedScale.toFixed(3);
+  scaleValue.textContent = clampedScale.toFixed(2) + 'x';
+  
+  // Update button states
+  updateScaleButtonStates();
+  
+  // Apply changes if image is loaded
+  if (originalImage) {
+    applyScale();
+    applyPreview();
+  }
+}
+
+function updateScaleButtonStates() {
+  if (!scaleRange || !scaleDecrease || !scaleIncrease) return;
+  
+  const currentScale = parseFloat(scaleRange.value) || 1;
+  const minScale = parseFloat(scaleRange.min) || 0.001;
+  const maxScale = parseFloat(scaleRange.max) || 5;
+  
+  // Enable/disable buttons based on current scale
+  scaleDecrease.disabled = currentScale <= minScale;
+  scaleIncrease.disabled = currentScale >= maxScale;
+}
+
+// Add event listeners for scale arrow buttons
+if (scaleDecrease) {
+  scaleDecrease.addEventListener('click', () => adjustScale(-0.01));
+}
+
+if (scaleIncrease) {
+  scaleIncrease.addEventListener('click', () => adjustScale(0.01));
+}
+
+// Update button states when scale changes via slider
+scaleRange.addEventListener('input', () => {
+  updateScaleButtonStates();
+});
+
+// Initialize button states on page load
+document.addEventListener('DOMContentLoaded', () => {
+  updateScaleButtonStates();
+});
+
 // ---- SINGLE upload handler: fit-to-viewport + center on load ----
 upload.addEventListener('change', e => {
   const file = e.target.files?.[0];
@@ -855,6 +918,7 @@ upload.addEventListener('change', e => {
     // controls + info
     scaleRange.value = 1.0;
     scaleValue.textContent = '1.00x';
+    updateScaleButtonStates(); // Update arrow button states
     initDimensions?.();
     showImageInfo(currentImageWidth, currentImageHeight);
 
@@ -923,6 +987,7 @@ upload.addEventListener('change', e => {
 window.addEventListener('beforeunload', () => {
   scaleRange.value = 1.0;
   scaleValue.textContent = '1.00x';
+  updateScaleButtonStates(); // Update arrow button states
   zoomRange.value  = 1.0;
   zoomValue.textContent  = '1.00x';
 });
