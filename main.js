@@ -1819,11 +1819,8 @@ document.addEventListener('DOMContentLoaded', () => {
   apply(); // set initial state
 });
 
-const colorListOrderRadio = document.querySelectorAll('input[name="colors-list-order"]')
-
-colorListOrderRadio.forEach(radio => {
+document.querySelectorAll('input[name="colors-list-order"]').forEach(radio => {
   radio.addEventListener('change', (event) => {
-    console.log(_colorCounts, event.target.value)
     if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
   })
 })
