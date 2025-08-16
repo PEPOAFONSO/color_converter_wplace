@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="it">
 <head>
 <meta name="google-site-verification" content="wHXxUrLL9Fnw-T9w50zILQ4PlwFotRNyXsA0fzRBmWU" />
 <meta charset="UTF-8">
-<meta property="og:title" content="Конвертер цветов Wplace">
-<meta property="og:description" content="Открытый и безопасный сайт, который преобразует цвета ваших изображений и пиксель-арта в доступные в Wplace, с масштабированием, переводами и многим другим...">
-<meta name="description" content="Открытый и безопасный сайт, который преобразует цвета ваших изображений и пиксель-арта в доступные в Wplace, с масштабированием, переводами и многим другим..." />
+<meta property="og:title" content="Convertitore di Colori Wplace">
+<meta property="og:description" content="Un sito web open source e sicuro che converte i colori delle tue immagini e delle tue pixel art in quelli disponibili su Wplace, con ridimensionamento, traduzioni e molto altro ancora...">
+<meta name="description" content="Un sito web open source e sicuro che converte i colori delle tue immagini e delle tue pixel art in quelli disponibili su Wplace, con ridimensionamento, traduzioni e molto altro ancora..." />
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/ru/">
+<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/fr/">
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#D60270">
-<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/ru/">
+<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/fr/">
 
-<title>Конвертер цветов Wplace</title>
+<title>Convertitore di Colori Wplace</title>
 <!-- Favicon -->
 <link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.png?v=2" type="image/png" sizes="32x32">
 <link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.ico?v=2" type="image/x-icon">
 <link rel="apple-touch-icon" href="https://pepoafonso.github.io/color_converter_wplace/apple-touch-icon.png?v=2" sizes="180x180">
 
 
-<link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/ru/">
+<link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/it/">
   <!-- hreflang links -->
 <link rel="alternate" hreflang="en"    href="https://pepoafonso.github.io/color_converter_wplace/" />
 <link rel="alternate" hreflang="pt"    href="https://pepoafonso.github.io/color_converter_wplace/pt/" />
@@ -43,9 +43,9 @@
   <!-- Header / Nav -->
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="/ru/">
+      <a class="brand" href="/fr/">
         <img src="../favicon.png" alt="" class="brand-mark" />
-        <span class="brand-name">Конвертер цветов Wplace</span>
+        <span class="brand-name" data-i18n="title">Convertitore di Colori Wplace</span>
       </a>
 
       <nav class="primary-nav" aria-label="Primary">
@@ -65,12 +65,12 @@
           <option value="ja">🇯🇵 日本語</option>
           <option value="de-CH">🇨🇭 Deutsch (Schweiz)</option>
           <option value="nl">🇳🇱 Nederlands</option>
-          <option value="ru" selected>🇷🇺 Русский</option>
+          <option value="ru">🇷🇺 Русский</option>
           <option value="tr">🇹🇷 Türkçe</option>
-          <option value="it">🇮🇹 Italiano</option>
+          <option value="it" selected>🇮🇹 Italiano</option>
         </select>
 
-        <button class="nav-burger" aria-label="Открыть меню" aria-expanded="false">
+        <button class="nav-burger" aria-label="Apri il menù" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -87,8 +87,8 @@
           <label for="upload" class="upload-box">
             <div class="upload-icon">📤</div>
             <div class="upload-text">
-              <strong data-i18n="uploadStrong">Загрузить изображение</strong>
-              <span data-i18n="uploadSpan">Кликните, вставьте или перетащите файл</span>
+              <strong data-i18n="uploadStrong">Carica un'immagine</strong>
+              <span data-i18n="uploadSpan">Clicca, incolla oppure trascina e rilascia</span>
             </div>
           </label>
         </div>
@@ -96,35 +96,35 @@
 
       <div class="card">
         <div class="scroll-bar">
-          <label for="scaleRange" data-i18n="scale">Масштаб</label>
+          <label for="scaleRange" data-i18n="scale">Scala</label>
           <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
           <span id="scaleValue">1.00x</span>
         </div>
 
         <div class="dimensions">
           <div class="dimension-input">
-            <label for="widthInput" data-i18n="width">Ширина</label>
+            <label for="widthInput" data-i18n="width">Larghezza</label>
             <input type="number" id="widthInput">
           </div>
           <div class="dimension-input">
-            <label for="heightInput" data-i18n="height">Высота</label>
+            <label for="heightInput" data-i18n="height">Altezza</label>
             <input type="number" id="heightInput">
           </div>
           <div class="dimension-input">
-            <label data-i18n="area">Площадь</label>
+            <label data-i18n="area">Area</label>
             <div class="area-box" id="area"></div>
           </div>
         </div>
         <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
         <button data-i18n="ditherButton"
                 id="ditherButton" class="btn btn-toggle active">
-          Дизеринг (Рекомендуется)
+          Dithering (consigliato)
         </button> 
       </div>
       <!-- Advanced options -->
       <details id="adv-options" class="adv-card">
         <summary>
-          <span data-i18n="advancedOptions">Дополнительные параметры</span>
+          <span data-i18n="advancedOptions">Opzioni avanzate</span>
         </summary>
 
         <div class="adv-content">
@@ -134,7 +134,7 @@
             data-i18n="transparentButton"
             data-i18n-title="transparentButtonTitle"
             type="button">
-            Скрыть полупрозрачные пиксели
+            Nascondi pixel semi-transparenti
           </button>
 
           <button
@@ -142,7 +142,7 @@
             class="btn btn-toggle"
             data-i18n="hideEyeControls"
             type="button">
-            Показать/скрыть элементы управления цветами (глаз)
+            Mostra/nascondi controlli di occultamento dei colori (occhi)
           </button>
         </div>
       </details>
@@ -156,19 +156,19 @@
       </div>
 
       <div class="scroll-bar">
-        <label for="zoomRange" data-i18n="zoom">Масштаб</label>
+        <label for="zoomRange" data-i18n="zoom">Zoom</label>
         <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
         <span id="zoomValue">1.00x</span>
       </div>
       <div>
         <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
-        Ctrl + Прокрутка для увеличения
+            Ctrl + scroll per zoomare
         </small>
       </div>
 
       <div class="actions">
-        <a id="download" class="btn" href="#" data-i18n="download">Скачать изображение</a>
-        <button id="clipboard" class="btn" data-i18n="clipboard">Копировать в буфер обмена</button>
+        <a id="download" class="btn" href="#" data-i18n="download">Scarica l'immagine</a>
+        <button id="clipboard" class="btn" data-i18n="clipboard">Copia negli appunti</button>
       </div>
     </div>
 
@@ -178,11 +178,11 @@
     <section class="panel panel-colors">
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="freeColors">Бесплатные цвета</p>
-      <button id="hide-toggle-free" class="btn-eye" title="Скрыть все бесплатные цвета"></button>
+      <p class="section-title" data-i18n="freeColors">Colori gratuiti</p>
+      <button id="hide-toggle-free" class="btn-eye" title="Nascondi tutti i colori gratuiti"></button>
       </div>
       <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
-        Отменить выбор всех бесплатных цветов
+        Deseleziona tutti i colori gratuiti
       </button>
       <div id="colors-free" class="chips">
     <button id="1" class="toggle-color active" data-type=free style="background: rgb(0,0,0); color: #fff;" title="Black: rgb(0, 0, 0)">Black</button>
@@ -220,11 +220,11 @@
     </div>
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="paidColors">Платные цвета (2000💧за каждый)</p>
-      <button id="hide-toggle-paid" class="btn-eye" title="Скрыть все платные цвета"></button>
+      <p class="section-title" data-i18n="paidColors">Colori a pagamento (2000 💧 ciascuno)</p>
+      <button id="hide-toggle-paid" class="btn-eye" title="Nascondi tutti i colori a pagamento"></button>
       </div>
       <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
-        Выбрать все 💧платные цвета
+        Seleziona tutti i colori 💧 a pagamento
       </button>
       <div id="colors-paid" class="chips">
     <button id="33" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
@@ -268,7 +268,7 @@
 <footer class="site-footer">
   <div class="container footer-content">
     <small>
-      &copy; Конвертер цветов Wplace —
+      &copy; Convertitore di Colori Wplace —
       <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
         Copyright (c) <span id="year"></span> PEPOAFONSO
       </a>
