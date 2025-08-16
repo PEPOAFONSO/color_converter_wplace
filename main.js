@@ -408,7 +408,7 @@ function processarImagem() {
   downloadLink.href = canvas.toDataURL('image/png');
   downloadLink.download = `converted_${fileName}`;
   showImageInfo(canvas.width, canvas.height);
-  if (colorCounts) showColorUsage(colorCounts);
+  if (colorCounts) showColorUsage(colorCounts, getColorsListOrder());
 
   _colorCounts = colorCounts
 
