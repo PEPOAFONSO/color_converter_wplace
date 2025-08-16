@@ -256,7 +256,7 @@ function processWithFloydSteinberg(ctx, palette, transparentHideActive) {
   const img = ctx.getImageData(0, 0, w, h);
   const d  = img.data;
 
-  // work in float copy to carry error
+  // float buffer to carry diffusion error
   const buf = new Float32Array(d.length);
   for (let i = 0; i < d.length; i++) buf[i] = d[i];
 
@@ -268,45 +268,49 @@ function processWithFloydSteinberg(ctx, palette, transparentHideActive) {
 
       let r = buf[idx], g = buf[idx+1], b = buf[idx+2], a = buf[idx+3];
 
-      // Your alpha rule
+      // Handle semi‑transparent input pixels
       if (a < 255 && a > 0) {
         if (transparentHideActive) {
-          // make transparent and skip diffusion
-          d[idx+3] = 0;
+          // hide and skip diffusion
           d[idx] = d[idx+1] = d[idx+2] = 0;
+          d[idx+3] = 0;
           continue;
         } else {
-          a = 255;
+          a = 255; // treat as opaque for processing
         }
       }
 
-      // Quantize current pixel to nearest in palette
+      // Quantize to nearest palette color
       const [nr, ng, nb] = corMaisProxima(r|0, g|0, b|0);
+      const key = `${nr},${ng},${nb}`;
+
+      // --- Per‑color hide: make transparent and skip diffusion/count ---
+      if (typeof hiddenColors !== 'undefined' && hiddenColors.has(key)) {
+        d[idx] = d[idx+1] = d[idx+2] = 0;
+        d[idx+3] = 0;
+        continue; // do NOT diffuse error from hidden pixels
+      }
+
+      // Write quantized color
       d[idx]   = nr;
       d[idx+1] = ng;
       d[idx+2] = nb;
       d[idx+3] = (a === 0) ? 0 : 255;
 
-      if (a !== 0) {
-        const key = `${nr},${ng},${nb}`;
+      // Count only visible pixels
+      if (d[idx+3] !== 0) {
         colorCounts[key] = (colorCounts[key] || 0) + 1;
       }
 
-      // Error
+      // Error terms
       const er = r - nr;
       const eg = g - ng;
       const eb = b - nb;
 
-      // Diffuse to neighbors (Floyd–Steinberg):
-      //   (x+1, y    ) += 7/16 * e
-      //   (x-1, y+1  ) += 3/16 * e
-      //   (x,   y+1  ) += 5/16 * e
-      //   (x+1, y+1  ) += 1/16 * e
-      // bounds checks inline
+      // Diffuse error to neighbors (Floyd–Steinberg)
       const push = (xx, yy, fr) => {
         if (xx < 0 || xx >= w || yy < 0 || yy >= h) return;
         const j = (yy * w + xx) * 4;
-        // only push into RGB; leave alpha as-is
         buf[j  ] = clampByte(buf[j  ] + er * fr);
         buf[j+1] = clampByte(buf[j+1] + eg * fr);
         buf[j+2] = clampByte(buf[j+2] + eb * fr);
@@ -322,6 +326,7 @@ function processWithFloydSteinberg(ctx, palette, transparentHideActive) {
   ctx.putImageData(img, 0, 0);
   return colorCounts;
 }
+
 
 //Zoom helper
 function fitZoomToViewport() {
@@ -346,28 +351,37 @@ function processarImagem() {
     // ---- DITHERED PATH ----
     colorCounts = processWithFloydSteinberg(ctx, padrao, transparentHideActive);
   } else {
-    // ---- NON-DITHERED PATH (your original loop) ----
+    // ---- NON-DITHERED PATH ----
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imgData.data;
     colorCounts = {};
 
     for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const a = data[i + 3];
+      const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
 
       const [nr, ng, nb] = corMaisProxima(r, g, b);
-      data[i]     = nr;
-      data[i + 1] = ng;
-      data[i + 2] = nb;
+      const key = `${nr},${ng},${nb}`;
 
-      if (a < 255 && a > 0) {
-        data[i + 3] = transparentHideActive ? 0 : 255;
+      // Per-color HIDE
+      if (hiddenColors.has(key)) {
+        data[i] = data[i + 1] = data[i + 2] = 0;
+        data[i + 3] = 0;
+        continue;
       }
 
-      if (a !== 0) {
-        const key = `${nr},${ng},${nb}`;
+      // Write quantized color
+      data[i] = nr; data[i + 1] = ng; data[i + 2] = nb;
+
+      // Alpha handling
+      if (a === 0) {
+        data[i + 3] = 0;
+      } else if (a < 255) {
+        data[i + 3] = transparentHideActive ? 0 : 255;
+      } else {
+        data[i + 3] = 255;
+      }
+
+      if (data[i + 3] !== 0) {
         colorCounts[key] = (colorCounts[key] || 0) + 1;
       }
     }
@@ -375,7 +389,7 @@ function processarImagem() {
     ctx.putImageData(imgData, 0, 0);
   }
 
-  // Keep processedCanvas in sync with what's on the main canvas
+  // --- keep processedCanvas/UI in sync right here ---
   if (!processedCanvas) {
     processedCanvas = document.createElement('canvas');
     processedCtx = processedCanvas.getContext('2d');
@@ -385,12 +399,14 @@ function processarImagem() {
   processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
   processedCtx.drawImage(canvas, 0, 0);
 
-  // Update UI bits
-  downloadLink.href = canvas.toDataURL("image/png");
+  downloadLink.href = canvas.toDataURL('image/png');
   downloadLink.download = `converted_${fileName}`;
   showImageInfo(canvas.width, canvas.height);
   if (colorCounts) showColorUsage(colorCounts);
+
+  return colorCounts;
 }
+
 
 
 // Image info display
@@ -414,46 +430,54 @@ if (heightInput) {
 
 
 // Color usage display
-function showColorUsage(colorCounts) {
-  let colorList = [];
-  padrao.forEach(([r, g, b]) => {
-    const key = `${r},${g},${b}`;
-    const count = colorCounts[key];
-    if (count === undefined) return;
-    colorList.push({ r, g, b, count, name: colorNames[key] });
-  });
-  colorList.sort((a, b) => b.count - a.count);
-
+function showColorUsage(colorCounts = {}) {
   const colorListDiv = document.getElementById('color-list');
   if (!colorListDiv) return;
-  colorListDiv.innerHTML = '';
-  colorList.forEach(({ r, g, b, count, name }) => {
-    const key = `${r},${g},${b}`;
-    const isPaid = paidColors.has(key);
 
-    const colorItem = document.createElement('div');
-    colorItem.style.display = 'flex';
-    colorItem.style.alignItems = 'center';
-    colorItem.style.marginBottom = '4px';
+  // Keep palette order, show if count > 0 or hidden
+  const rows = padrao.map(([r, g, b]) => {
+    const key    = `${r},${g},${b}`;
+    const name   = colorNames[key] || `rgb(${r}, ${g}, ${b})`;
+    const count  = colorCounts[key] || 0;
+    const hidden = typeof hiddenColors !== 'undefined' && hiddenColors.has(key);
+    return { r, g, b, key, name, count, hidden };
+  }).filter(item => item.count > 0 || item.hidden);
+
+  colorListDiv.innerHTML = '';
+  rows.forEach(({ r, g, b, name, count, hidden }) => {
+    const row = document.createElement('div');
+    row.className = 'usage-item' + (hidden ? ' hidden' : '');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '10px';
+    row.style.marginBottom = '6px';
 
     const swatch = document.createElement('span');
     swatch.style.display = 'inline-block';
-    swatch.style.width = '24px';
-    swatch.style.height = '24px';
-    swatch.style.background = `rgb(${r},${g},${b})`;
+    swatch.style.width = '20px';
+    swatch.style.height = '20px';
     swatch.style.border = '1px solid #ccc';
-    swatch.style.marginRight = '8px';
+    swatch.style.background = `rgb(${r},${g},${b})`;
 
     const label = document.createElement('span');
-    const colorName = name || `rgb(${r}, ${g}, ${b})`;
-    label.textContent = `${colorName}: ${count} px`;
-    if (isPaid) label.style.color = 'gold';
+    if (hidden && count === 0) {
+      // Show eye icon instead of 0px
+      label.textContent = `${name}: `;
+      const eyeIcon = document.createElement('span');
+      eyeIcon.className = 'usage-hide-icon';
+      label.appendChild(eyeIcon);
+    } else {
+      label.textContent = hidden
+        ? `${name}: ${count} px`
+        : `${name}: ${count} px`;
+    }
 
-    colorItem.appendChild(swatch);
-    colorItem.appendChild(label);
-    colorListDiv.appendChild(colorItem);
+    row.appendChild(swatch);
+    row.appendChild(label);
+    colorListDiv.appendChild(row);
   });
 }
+
 
 // --- Script for select All buttons ---
 
@@ -605,6 +629,116 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --End of Script for buttons--
+
+// --- Hidden colors (per-chip eye toggle) -------------------------------
+const hiddenColors = new Set();
+
+function rgbKeyFromButton(btn) {
+  const bg = getComputedStyle(btn).backgroundColor;
+  const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? `${+m[1]},${+m[2]},${+m[3]}` : null;
+}
+
+function updateEyeForButton(btn) {
+  const key = rgbKeyFromButton(btn);
+  const eye = btn.querySelector('.hide-eye');
+  const hidden = key ? hiddenColors.has(key) : false;
+  if (eye) {
+    eye.classList.toggle('is-off', hidden);
+    eye.title = hidden ? 'Show color' : 'Hide color';
+  }
+  btn.classList.toggle('color-hidden', hidden);
+}
+
+function augmentColorChipsWithEye() {
+  document.querySelectorAll('#colors-free .toggle-color, #colors-paid .toggle-color')
+    .forEach(btn => {
+      if (!btn.querySelector('.hide-eye')) {
+        const eye = document.createElement('button');
+        eye.type = 'button';
+        eye.className = 'hide-eye';
+        eye.title = 'Hide color';
+        eye.addEventListener('click', (e) => {
+          e.stopPropagation();                 // don’t toggle selection
+          const key = rgbKeyFromButton(btn);
+          if (!key) return;
+          if (hiddenColors.has(key)) hiddenColors.delete(key);
+          else hiddenColors.add(key);
+          updateEyeForButton(btn);
+          refreshMasterEyes();
+          if (originalImage) { applyScale?.(); applyPreview?.(); }
+        });
+        btn.appendChild(eye);
+      }
+      updateEyeForButton(btn);
+    });
+}
+
+// Run once and re-run if the lists are rebuilt
+document.addEventListener('DOMContentLoaded', augmentColorChipsWithEye);
+const rootsToWatch = ['colors-free','colors-paid']
+  .map(id => document.getElementById(id))
+  .filter(Boolean);
+const mo = new MutationObserver(augmentColorChipsWithEye);
+rootsToWatch.forEach(root => mo.observe(root, { childList: true, subtree: true }));
+
+// --- Master eye (hide/show all in a section) -----------------------------
+function sectionChips(selector) {
+  return Array.from(document.querySelectorAll(`${selector} .toggle-color`));
+}
+
+function hideShowAllInSection(selector, hide) {
+  const chips = sectionChips(selector);
+  chips.forEach(btn => {
+    const key = rgbKeyFromButton(btn);
+    if (!key) return;
+    if (hide) hiddenColors.add(key); else hiddenColors.delete(key);
+    updateEyeForButton(btn);
+  });
+  refreshMasterEyes();
+  if (originalImage) { applyScale?.(); applyPreview?.(); }
+}
+
+function updateMasterEye(selector, btn) {
+  const chips = sectionChips(selector);
+  if (!chips.length) { btn.classList.remove('active'); return; }
+  const allHidden = chips.every(b => {
+    const key = rgbKeyFromButton(b);
+    return key && hiddenColors.has(key);
+  });
+  btn.classList.toggle('active', allHidden);
+  btn.title = allHidden ? 'Show all colors' : 'Hide all colors';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const freeBtn = document.getElementById('hide-toggle-free');
+  const paidBtn = document.getElementById('hide-toggle-paid');
+
+  if (freeBtn) {
+    updateMasterEye('#colors-free', freeBtn);
+    freeBtn.addEventListener('click', () => {
+      const makeHide = !freeBtn.classList.contains('active');
+      hideShowAllInSection('#colors-free', makeHide);
+      updateMasterEye('#colors-free', freeBtn);
+    });
+  }
+
+  if (paidBtn) {
+    updateMasterEye('#colors-paid', paidBtn);
+    paidBtn.addEventListener('click', () => {
+      const makeHide = !paidBtn.classList.contains('active');
+      hideShowAllInSection('#colors-paid', makeHide);
+      updateMasterEye('#colors-paid', paidBtn);
+    });
+  }
+});
+
+function refreshMasterEyes() {
+  const freeBtn = document.getElementById('hide-toggle-free');
+  const paidBtn = document.getElementById('hide-toggle-paid');
+  if (freeBtn) updateMasterEye('#colors-free', freeBtn);
+  if (paidBtn) updateMasterEye('#colors-paid', paidBtn);
+}
 
 // Scale, Zoom, and Dimension functionality
 const scaleRange   = document.getElementById('scaleRange');
@@ -984,6 +1118,8 @@ const translations = {
     ditherButton: "Dither (recommended)",
     uploadStrong: "Upload Image",
     uploadSpan: "Click, paste or drag & drop",
+    hideEyeControls: "Show color-hiding controls (eyes)",
+    advancedOptions: "Advanced options",
   },
   pt: {
     title: "Conversor de Cores Wplace",
@@ -1011,6 +1147,8 @@ const translations = {
     ditherButton: "Dithering (recomendado)",
     uploadStrong: "Carregar Imagem",
     uploadSpan: "Clique, cole ou arraste e largue",
+    hideEyeControls: "Mostrar controlos de ocultação de cores (olhos)",
+    advancedOptions: "Opções avançadas",
   },
   de: {
     title: "Wplace Farbkonverter",
@@ -1038,6 +1176,8 @@ const translations = {
     ditherButton: "Dithering (empfohlen)",
     uploadStrong: "Bild hochladen",
     uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
+    hideEyeControls: "Farb-Ausblendsteuerung anzeigen (Augen)",
+    advancedOptions: "Erweiterte Optionen",
   },
   es: {
     title: "Convertidor de Colores Wplace",
@@ -1065,6 +1205,8 @@ const translations = {
     ditherButton: "Tramado (recomendado)",
     uploadStrong: "Subir imagen",
     uploadSpan: "Haz clic, pega o arrastra y suelta",
+    hideEyeControls: "Mostrar controles para ocultar colores (ojos)",
+    advancedOptions: "Opciones avanzadas",
   },
   fr: {
     title: "Convertisseur de Couleurs Wplace",
@@ -1092,6 +1234,8 @@ const translations = {
     ditherButton: "Tramage (recommandé)",
     uploadStrong: "Télécharger une image",
     uploadSpan: "Cliquez, collez ou glissez-déposez",
+    hideEyeControls: "Afficher les contrôles de masquage des couleurs (yeux)",
+    advancedOptions: "Options avancées",
   },
   uk: {
     title: "Конвертер кольорів Wplace",
@@ -1119,6 +1263,8 @@ const translations = {
     ditherButton: "Дизеринг (рекомендовано)",
     uploadStrong: "Завантажити зображення",
     uploadSpan: "Натисніть, вставте або перетягніть",
+    hideEyeControls: "Показати елементи керування приховуванням кольорів (очі)",
+    advancedOptions: "Розширені параметри",
   },
   vi: {
     title: "Trình chuyển đổi màu Wplace",
@@ -1146,6 +1292,8 @@ const translations = {
     ditherButton: "Dithering (khuyến nghị)",
     uploadStrong: "Tải hình ảnh",
     uploadSpan: "Nhấp, dán hoặc kéo và thả",
+    hideEyeControls: "Hiển thị điều khiển ẩn màu (mắt)",
+    advancedOptions: "Tùy chọn nâng cao",
   },
   ja: {
     title: "Wplace カラーコンバーター",
@@ -1173,6 +1321,8 @@ const translations = {
     ditherButton: "ディザリング（推奨）",
     uploadStrong: "画像をアップロード",
     uploadSpan: "クリック、貼り付け、またはドラッグ＆ドロップ",
+    hideEyeControls: "色非表示コントロールを表示（目のアイコン）",
+    advancedOptions: "詳細オプション",
   },
   pl: {
     title: "Konwerter Kolorów Wplace",
@@ -1200,6 +1350,8 @@ const translations = {
     ditherButton: "Dithering (zalecane)",
     uploadStrong: "Prześlij obraz",
     uploadSpan: "Kliknij, wklej lub przeciągnij i upuść",
+    hideEyeControls: "Pokaż kontrolki ukrywania kolorów (oczy)",
+    advancedOptions: "Opcje zaawansowane",
   },
   de_CH: {
     title: "Wplace Farbkonverter",
@@ -1227,6 +1379,8 @@ const translations = {
     ditherButton: "Dithering (empfohlen)",
     uploadStrong: "Bild hochladen",
     uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
+    hideEyeControls: "Farb-Ausblendsteuerung anzeigen (Augen)",
+    advancedOptions: "Erweiterte Optionen",
   },
   nl: {
     title: "Wplace Kleurconverter",
@@ -1250,6 +1404,8 @@ const translations = {
     ditherButton: "Dithering (aanbevolen)",
     uploadStrong: "Afbeelding uploaden",
     uploadSpan: "Klik, plak of sleep en zet neer",
+    hideEyeControls: "Toon kleurverbergingsknoppen (ogen)",
+    advancedOptions: "Geavanceerde opties",
   },
   ru: {
     title: "Конвертер цветов Wplace",
@@ -1277,6 +1433,8 @@ const translations = {
     ditherButton: "Дизеринг (рекомендуется)",
     uploadStrong: "Загрузить изображение",
     uploadSpan: "Нажмите, вставьте или перетащите",
+    hideEyeControls: "Показать элементы управления скрытием цветов (глаза)",
+    advancedOptions: "Дополнительные параметры",
   },
   tr: {
     title: "Wplace Renk Dönüştürücü",
@@ -1304,6 +1462,8 @@ const translations = {
     ditherButton: "Dithering (önerilir)",
     uploadStrong: "Resim Yükle",
     uploadSpan: "Tıklayın, yapıştırın veya sürükleyip bırakın",
+    hideEyeControls: "Renk gizleme kontrollerini göster (gözler)",
+    advancedOptions: "Gelişmiş seçenekler",
   }
 };
 
@@ -1313,14 +1473,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // A) repoName vs local‐mode
   let repoName = "", currentPathLang = "en";
-  if (translations[parts[0]]) {
-    currentPathLang = parts[0];               // local: "/de/"
+
+  // Helper to normalize folder/lang code for comparison
+  const normalizeLangKey = str => str ? str.replace('-', '_').toLowerCase() : "";
+
+  // Get a normalized list of all available translation keys
+  const translationKeys = Object.keys(translations).map(k => normalizeLangKey(k));
+
+  // Check first path part (local mode)
+  if (translationKeys.includes(normalizeLangKey(parts[0]))) {
+    currentPathLang = Object.keys(translations).find(
+      k => normalizeLangKey(k) === normalizeLangKey(parts[0])
+    );
   } else {
-    repoName = parts[0] || "";                
-    if (translations[parts[1]]) {
-      currentPathLang = parts[1];             // pages: "/repoName/de/"
+    // Pages mode with repoName
+    repoName = parts[0] || "";
+    if (translationKeys.includes(normalizeLangKey(parts[1]))) {
+      currentPathLang = Object.keys(translations).find(
+        k => normalizeLangKey(k) === normalizeLangKey(parts[1])
+      );
     }
   }
+
   const base = repoName ? `/${repoName}` : "";
 
   // B) Grab savedLang _before_ any detection
@@ -1342,14 +1516,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // D) **Only** honor the URL if there _was_ a savedLang (i.e. the user had explicitly chosen before)
   const manuallyNavigated =
     (!repoName && translations[parts[0]]) ||
-    (repoName  && translations[parts[1]]);
+    (repoName && translations[parts[1]]);
   if (savedLang && manuallyNavigated) {
     lang = currentPathLang;
     localStorage.setItem("lang", lang);
   }
 
-  // E) If our final lang ≠ the URL, redirect to the correct one
-  if (currentPathLang !== lang) {
+  // E) If our final lang ≠ the URL (normalized), redirect to the correct one
+  if (normalizeLangKey(currentPathLang) !== normalizeLangKey(lang)) {
     const dest = lang === "en"
       ? `${base}/`
       : `${base}/${lang}/`;
@@ -1364,16 +1538,31 @@ document.addEventListener("DOMContentLoaded", () => {
     select.addEventListener("change", () => {
       const chosen = select.value;
       localStorage.setItem("lang", chosen);
+
+      // Remove repoName if present
+      let pathParts = window.location.pathname.split("/").filter(Boolean);
+      if (repoName) pathParts.shift();
+
+      // Remove existing lang if present (normalized check)
+      if (translationKeys.includes(normalizeLangKey(pathParts[0]))) {
+        pathParts.shift();
+      }
+
+      // Build new target path
       const target = chosen === "en"
-        ? `${base}/`
-        : `${base}/${chosen}/`;
-      window.location.href = window.location.origin + target;
+        ? `${base}/${pathParts.join("/")}`
+        : `${base}/${chosen}/${pathParts.join("/")}`;
+
+      // Ensure single trailing slash
+      window.location.href = window.location.origin + target.replace(/\/+$/, "") + "/";
     });
   }
 
   // G) Finally, apply in‐page translations
   applyTranslations(lang);
 });
+
+
 
 
 // Global variables for image size
@@ -1481,7 +1670,7 @@ console.log(document.getElementById("meta-og-title"));
     let cur    = parseFloat(slider.value) || 1;
 
     // log-scale step (smooth & never stuck at tiny values)
-    const STEP = 0.01;
+    const STEP = 0.05;
     let logZ = Math.log(Math.max(cur, MIN));   // floor at MIN so recovery works
     logZ += (e.deltaY < 0 ? +STEP : -STEP);
     let next = Math.exp(logZ);
@@ -1518,17 +1707,17 @@ const DITHER_KEY = 'ditherOn';
 
 function isDitheringOn() {
   const v = localStorage.getItem(DITHER_KEY);
-  return v === null ? true : v === 'true';   // default ON
+  return v === null ? false : v === 'true';   // default OFF
 }
 
 (function initDitherButton(){
   const btn = document.getElementById('ditherButton');
   if (!btn) return;
 
-  // Determine initial state (default ON first time)
+  // Determine initial state (default OFF first time)
   const saved = localStorage.getItem(DITHER_KEY);
-  const on = saved === null ? true : saved === 'true';
-  if (saved === null) localStorage.setItem(DITHER_KEY, 'true');
+  const on = saved === null ? false : saved === 'true';
+  if (saved === null) localStorage.setItem(DITHER_KEY, 'false');
 
   // Sync UI
   btn.classList.toggle('active', on);
@@ -1557,3 +1746,26 @@ function isDitheringOn() {
     applyPreview?.();
   }
 })();
+
+
+// Advanced options: toggle visibility of all "hide color" controls
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('opt-toggle-hide-ui');
+  if (!btn) return;
+
+  const apply = () => {
+    const on = btn.classList.contains('active');
+    // on = show eyes; off = hide them
+    document.body.classList.toggle('hide-ui-off', !on);
+    // keep master eye visual state in sync
+    if (typeof refreshMasterEyes === 'function') refreshMasterEyes();
+  };
+
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    apply();
+  });
+
+  apply(); // set initial state
+});
+

@@ -52,7 +52,7 @@ body {
 
 
 /* Utilities */
-.container{width:min(100%, var(--container)); margin-inline:auto; padding-inline:16px}
+.container{width: 75%; margin-inline:auto; padding-inline:16px}
 .muted{color:var(--muted); font-size:.95rem}
 .label{display:block; margin-bottom:8px; font-weight:600; font-size: 1.05re}; 
 .sr-only{position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px)}
@@ -120,35 +120,51 @@ body {
   align-items:stretch;
 }
 
-.panel{display:flex; flex-direction:column; gap:20px}
-.card{
-  background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 18px;
 }
 
-.panel-colors{
-  grid-column:1 / -1;
-  grid-row:3; 
-  display:grid;
-  grid-template-columns: 1fr 1fr; 
-  gap:20px;
-  align-items:stretch;
+.panel-colors {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
 }
 
-
-.panel-colors .card{
-  display:grid;
-  grid-template-columns: 1fr auto;
-  grid-auto-rows: min-content;
-  row-gap:12px;
-  height:100%;
+.panel-colors .card {
+  display: flex;              /* switch from grid to flex */
+  flex-direction: column;     /* stack elements vertically */
+  gap: 12px;
+  height: 100%;
 }
 
-.panel-colors .card .section-title{ grid-column:1; margin:0; font-size: 1.1rem; }
-.panel-colors .card > .btn-chip{ grid-column:2; align-self:start }
+.panel-colors .card .section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+.panel-colors .card .btn-eye {
+  align-self: flex-start; /* keep small icon aligned to left */
+}
+
+.panel-colors .card .btn {
+  width: 100%;             /* button spans full width */
+  align-self: flex-start;  /* align left */
+}
+
 
 .panel-left,
 .panel-right {
@@ -250,6 +266,11 @@ h2#title, h2 {
   font-weight: bold;
   color: var(--brand);
 }
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* space between slider and value */
+}
 
 /* dimensions (keeps your original look) */
 .dimensions { display:flex; gap: 1.5rem; justify-content: center; }
@@ -332,6 +353,49 @@ h2#title, h2 {
 
 .toggle-color:hover{ transform: translateY(-1px); }
 .toggle-color.active{ border-color: #00eaff; box-shadow: 0 0 0 2px #00eaff55; }
+
+/* Eye button inside each color chip */
+.toggle-color { position: relative; }
+.toggle-color .hide-eye {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  border: 0; border-radius: 6px;
+  background: none; cursor: pointer; padding: 0;
+  display: grid; place-items: center;
+  opacity: .85;
+  color: #111;
+}
+.toggle-color .hide-eye:hover { opacity: 1; }
+
+.toggle-color[style*="color: #fff"] .hide-eye { color: #fff; }
+
+/* SVG icons via mask (no extra files) */
+/* eye on */
+.hide-eye::before{
+  content:"";
+  width:16px;height:16px;display:block;background:currentColor;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center;  mask-position:center;
+  -webkit-mask-size:contain;     mask-size:contain;
+}
+
+/* eye with slash (hidden) */
+.hide-eye.is-off::before{
+  content:"";
+  width:16px;height:16px;display:block;background:currentColor;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center;  mask-position:center;
+  -webkit-mask-size:contain;     mask-size:contain;
+}
+
+
+/* optional: dim hidden chips */
+.toggle-color.color-hidden { filter: grayscale(.6) brightness(.8); }
+
 
 /* containers (renamed FREE from #colors to #colors-free, keeps #colors-paid) */
 #colors-free, #colors-paid{
@@ -550,3 +614,142 @@ main { flex: 1; } /* ensure body gradient fills page */
   background: #0f1420;
   border: 1px solid var(--border);
 }
+
+/* Master eye buttons (hide/show all) */
+.btn-eye{
+  width:30px; height:30px; margin: 0 10px 8px 10px;
+  border-radius: 10px; border:1px solid var(--border);
+  background: var(--btn-primary); color:#e8eef8; cursor:pointer;
+  display:inline-grid; place-items:center; padding:0;
+  box-shadow:none;
+}
+.btn-eye:hover{ background: var(--btn-primary-hover); }
+
+/* icon */
+.btn-eye::before{
+  content:"";
+  width:18px; height:18px; display:block; background:currentColor;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center;  mask-position:center;
+  -webkit-mask-size:contain;     mask-size:contain;
+}
+
+/* active = “hide all” -> slashed eye + highlighted border */
+.btn-eye.active{
+  border-color:#00eaff;
+  box-shadow:0 0 0 2px #00eaff55;
+}
+.btn-eye.active::before{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+}
+
+.toggle-color.color-hidden {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.toggle-color.color-hidden .hide-eye {
+  opacity: 1;
+}
+
+.usage-item.hidden {
+  opacity: 0.45;
+  filter: grayscale(100%);
+}
+
+.usage-hide-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+/* --- Advanced options (details/summary) --- */
+.adv-card {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  box-shadow: var(--shadow);
+}
+.adv-card > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+  outline: none;
+}
+.adv-card > summary::-webkit-details-marker { display: none; }
+.adv-card > summary::after {
+  content: "";
+  margin-left: auto;
+  width: 10px; height: 10px;
+  border-right: 2px solid var(--text);
+  border-bottom: 2px solid var(--text);
+  transform: rotate(45deg);
+  opacity: .8;
+}
+.adv-card[open] > summary::after { transform: rotate(225deg); }
+
+.adv-card .adv-content {
+  padding: 10px 14px 14px 14px;
+  display: grid; gap: 8px;
+}
+.adv-check {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .98rem; color: var(--text);
+}
+.adv-check input { accent-color: var(--brand); }
+
+/* --- Master eye (small icon button in card header) --- */
+.btn-eye{
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f1420;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #e8eef8;
+}
+
+.btn-eye:hover { box-shadow: 0 0 0 2px #00eaff33; }
+
+.btn-eye::before{
+  content: "";
+  width: 16px;
+  height: 16px;
+  display: block;
+  background: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+          mask-image:       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;           mask-repeat: no-repeat;
+  -webkit-mask-position: center;            mask-position: center;
+  -webkit-mask-size: contain;               mask-size: contain;
+}
+
+.btn-eye.active::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+          mask-image:       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 3.51 20.49 21.9l1.41-1.41L3.51 2.1 2.1 3.51zM12 6c4.42 0 8.19 2.55 10 6-1 2.22-2.76 4.07-4.94 5.16l-2.2-2.2A4.5 4.5 0 0 0 9.03 10l-2.1-2.1A12.7 12.7 0 0 1 12 6zm0 12c-4.42 0-8.19-2.55-10-6 .83-1.84 2.23-3.42 3.98-4.56l2.16 2.16A4.5 4.5 0 0 0 14.4 14.3l2.36 2.36A12.6 12.6 0 0 1 12 18z'/%3E%3C/svg%3E");
+}
+
+/* When the toggle is OFF, hide all color-hiding UI */
+body.hide-ui-off .hide-eye,
+body.hide-ui-off .btn-eye { display: none !important; }
+
