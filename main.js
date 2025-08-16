@@ -1257,7 +1257,7 @@ const translations = {
     allButtonpaidUnselect: "Deseleziona tutti i colori 💧 a pagamento",
     zoom: "Zoom",
     scale: "Scala",
-    transparentButton: "Nascondi pixel semi-transparenti",
+    transparentButton: "Nascondi pixel semi-trasparenti",
     transparentButtonTitle: "Quando attivo, i pixel semi-trasparenti diventano totalmente trasparenti; altrimenti sono totalmente opachi.",
     zoomHint: "Ctrl + scroll per zoomare",
     ditherButton: "Dithering (consigliato)",
