@@ -343,7 +343,7 @@ function getColorsListOrder() {
 }
 
 // Image processing
-let _colorCount
+let _colorCounts
 
 function processarImagem() {
   if (!canvas || !ctx) return;
@@ -409,6 +409,8 @@ function processarImagem() {
   downloadLink.download = `converted_${fileName}`;
   showImageInfo(canvas.width, canvas.height);
   if (colorCounts) showColorUsage(colorCounts);
+
+  _colorCounts = colorCounts
 
   return colorCounts;
 }
@@ -1821,6 +1823,7 @@ const colorListOrderRadio = document.querySelectorAll('input[name="colors-list-o
 
 colorListOrderRadio.forEach(radio => {
   radio.addEventListener('change', (event) => {
-    if (_colorCount) showColorUsage(_colorCount, event.target.value);
+    console.log(_colorCounts, event.target.value)
+    if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
   })
 })
