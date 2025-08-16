@@ -1258,7 +1258,7 @@ const translations = {
     zoom: "Zoom",
     scale: "Scala",
     transparentButton: "Nascondi pixel semi-transparenti",
-    transparentButtonTitle: "Quando attivo, i pixel semitrasparenti diventano totalmente trasparenti; altrimenti sono totalmente opachi.",
+    transparentButtonTitle: "Quando attivo, i pixel semi-trasparenti diventano totalmente trasparenti; altrimenti sono totalmente opachi.",
     zoomHint: "Ctrl + scroll per zoomare",
     ditherButton: "Dithering (consigliato)",
     uploadStrong: "Carica un'immagine",
