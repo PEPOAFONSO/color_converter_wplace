@@ -337,8 +337,14 @@ function fitZoomToViewport() {
   return (fit > 0 && isFinite(fit)) ? fit : 1;
 }
 
+function getColorsListOrder() {
+  const fromInput = document.querySelector('input[name="colors-list-order"]:checked')?.value
+  return fromInput || 'original'
+}
 
 // Image processing
+let _colorCounts
+
 function processarImagem() {
   if (!canvas || !ctx) return;
 
@@ -402,7 +408,9 @@ function processarImagem() {
   downloadLink.href = canvas.toDataURL('image/png');
   downloadLink.download = `converted_${fileName}`;
   showImageInfo(canvas.width, canvas.height);
-  if (colorCounts) showColorUsage(colorCounts);
+  if (colorCounts) showColorUsage(colorCounts, getColorsListOrder());
+
+  _colorCounts = colorCounts
 
   return colorCounts;
 }
@@ -430,7 +438,7 @@ if (heightInput) {
 
 
 // Color usage display
-function showColorUsage(colorCounts = {}) {
+function showColorUsage(colorCounts = {}, order = 'original') {
   const colorListDiv = document.getElementById('color-list');
   if (!colorListDiv) return;
 
@@ -444,7 +452,10 @@ function showColorUsage(colorCounts = {}) {
   }).filter(item => item.count > 0 || item.hidden);
 
   colorListDiv.innerHTML = '';
-  rows.forEach(({ r, g, b, name, count, hidden }) => {
+
+  const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
+
+  rowsSorted.forEach(({r, g, b, name, count, hidden}) => {
     const row = document.createElement('div');
     row.className = 'usage-item' + (hidden ? ' hidden' : '');
     row.style.display = 'flex';
@@ -1120,6 +1131,9 @@ const translations = {
     uploadSpan: "Click, paste or drag & drop",
     hideEyeControls: "Show color-hiding controls (eyes)",
     advancedOptions: "Advanced options",
+    sort: "Sort by",
+    sortOriginal: "Original",
+    sortCount: "Most used",
   },
   pt: {
     title: "Conversor de Cores Wplace",
@@ -1149,6 +1163,9 @@ const translations = {
     uploadSpan: "Clique, cole ou arraste e largue",
     hideEyeControls: "Mostrar controlos de ocultação de cores (olhos)",
     advancedOptions: "Opções avançadas",
+    sort: "Ordenar por",
+    sortOriginal: "Original",
+    sortCount: "Mais frequentes",
   },
   de: {
     title: "Wplace Farbkonverter",
@@ -1178,6 +1195,9 @@ const translations = {
     uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
     hideEyeControls: "Farb-Ausblendsteuerung anzeigen (Augen)",
     advancedOptions: "Erweiterte Optionen",
+    sort: "Sortieren nach",
+    sortOriginal: "Original",
+    sortCount: "Am häufigsten verwendet",
   },
   es: {
     title: "Convertidor de Colores Wplace",
@@ -1207,6 +1227,9 @@ const translations = {
     uploadSpan: "Haz clic, pega o arrastra y suelta",
     hideEyeControls: "Mostrar controles para ocultar colores (ojos)",
     advancedOptions: "Opciones avanzadas",
+    sort: "Ordenar por",
+    sortOriginal: "Original",
+    sortCount: "Más usados",
   },
   fr: {
     title: "Convertisseur de Couleurs Wplace",
@@ -1236,6 +1259,9 @@ const translations = {
     uploadSpan: "Cliquez, collez ou glissez-déposez",
     hideEyeControls: "Afficher les contrôles de masquage des couleurs (yeux)",
     advancedOptions: "Options avancées",
+    sort: "Trier par",
+    sortOriginal: "Original",
+    sortCount: "Les plus utilisés",
   },
   uk: {
     title: "Конвертер кольорів Wplace",
@@ -1265,6 +1291,9 @@ const translations = {
     uploadSpan: "Натисніть, вставте або перетягніть",
     hideEyeControls: "Показати елементи керування приховуванням кольорів (очі)",
     advancedOptions: "Розширені параметри",
+    sort: "Сортувати за",
+    sortOriginal: "Оригінал",
+    sortCount: "Найбільш використовувані",
   },
   vi: {
     title: "Trình chuyển đổi màu Wplace",
@@ -1294,6 +1323,9 @@ const translations = {
     uploadSpan: "Nhấp, dán hoặc kéo và thả",
     hideEyeControls: "Hiển thị điều khiển ẩn màu (mắt)",
     advancedOptions: "Tùy chọn nâng cao",
+    sort: "Sắp xếp theo",
+    sortOriginal: "Gốc",
+    sortCount: "Sử dụng nhiều nhất",
   },
   ja: {
     title: "Wplace カラーコンバーター",
@@ -1323,6 +1355,9 @@ const translations = {
     uploadSpan: "クリック、貼り付け、またはドラッグ＆ドロップ",
     hideEyeControls: "色非表示コントロールを表示（目のアイコン）",
     advancedOptions: "詳細オプション",
+    sort: "並べ替え",
+    sortOriginal: "オリジナル",
+    sortCount: "最も使用された",
   },
   pl: {
     title: "Konwerter Kolorów Wplace",
@@ -1352,6 +1387,9 @@ const translations = {
     uploadSpan: "Kliknij, wklej lub przeciągnij i upuść",
     hideEyeControls: "Pokaż kontrolki ukrywania kolorów (oczy)",
     advancedOptions: "Opcje zaawansowane",
+    sort: "Sortuj według",
+    sortOriginal: "Oryginalne",
+    sortCount: "Najczęściej używane",
   },
   de_CH: {
     title: "Wplace Farbkonverter",
@@ -1381,6 +1419,9 @@ const translations = {
     uploadSpan: "Klicken, einfügen oder ziehen und ablegen",
     hideEyeControls: "Farb-Ausblendsteuerung anzeigen (Augen)",
     advancedOptions: "Erweiterte Optionen",
+    sort: "Sortieren nach",
+    sortOriginal: "Original",
+    sortCount: "Am häufigsten verwendet",
   },
   nl: {
     title: "Wplace Kleurconverter",
@@ -1406,6 +1447,9 @@ const translations = {
     uploadSpan: "Klik, plak of sleep en zet neer",
     hideEyeControls: "Toon kleurverbergingsknoppen (ogen)",
     advancedOptions: "Geavanceerde opties",
+    sort: "Sorteren op",
+    sortOriginal: "Origineel",
+    sortCount: "Meest gebruikt",
   },
   ru: {
     title: "Конвертер цветов Wplace",
@@ -1435,6 +1479,9 @@ const translations = {
     uploadSpan: "Нажмите, вставьте или перетащите",
     hideEyeControls: "Показать элементы управления скрытием цветов (глаза)",
     advancedOptions: "Дополнительные параметры",
+    sort: "Сортировать по",
+    sortOriginal: "Оригинал",
+    sortCount: "Наиболее используемые",
   },
   tr: {
     title: "Wplace Renk Dönüştürücü",
@@ -1464,35 +1511,9 @@ const translations = {
     uploadSpan: "Tıklayın, yapıştırın veya sürükleyip bırakın",
     hideEyeControls: "Renk gizleme kontrollerini göster (gözler)",
     advancedOptions: "Gelişmiş seçenekler",
-  },
-  he: {
-    title: "ממיר צבעים ל-Wplace",
-    freeColors: "צבעים חינמיים:",
-    paidColors: "צבעים בתשלום (2000💧 כל אחד):",
-    download: "הורד תמונה",
-    clipboard: "העתק ללוח",
-    goto: "מעבר ל-Wplace",
-    pixelsAmount: "כמות פיקסלים:",
-    width: "רוחב:",
-    height: "גובה:",
-    area: "שטח:",
-    imageCopied: "התמונה הועתקה ללוח!",
-    copyFailed: "נכשל בהעתקת התמונה.",
-    imageNotFound: "לא נמצאה תמונה",
-    allButtonfreeSelect: "בחר את כל הצבעים החינמיים",
-    allButtonfreeUnselect: "בטל בחירת כל הצבעים החינמיים",
-    allButtonpaidSelect: "בחר את כל 💧הצבעים בתשלום",
-    allButtonpaidUnselect: "בטל בחירת כל 💧הצבעים בתשלום",
-    zoom: "זום",
-    scale: "קנה מידה",
-    transparentButton: "הסתר פיקסלים חצי־שקופים",
-    transparentButtonTitle: "כאשר פעיל, פיקסלים חצי־שקופים יהפכו לשקופים לחלוטין, אחרת לאטומים לחלוטין.",
-    zoomHint: "Ctrl + גלילה לזום",
-    ditherButton: "דית'רינג (מומלץ)",
-    uploadStrong: "העלה תמונה",
-    uploadSpan: "לחץ, הדבק או גרור ושחרר",
-    hideEyeControls: "הצג/הסתר בקרות הסתרת צבע (עיניים)",
-    advancedOptions: "אפשרויות מתקדמות",
+    sort: "Sırala",
+    sortOriginal: "Orijinal",
+    sortCount: "En çok kullanılan",
   },
 };
 
@@ -1796,3 +1817,8 @@ document.addEventListener('DOMContentLoaded', () => {
   apply(); // set initial state
 });
 
+document.querySelectorAll('input[name="colors-list-order"]').forEach(radio => {
+  radio.addEventListener('change', (event) => {
+    if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
+  })
+})
