@@ -1542,14 +1542,12 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("lang", lang);
   }
 
-  // D) **Only** honor the URL if there _was_ a savedLang (i.e. the user had explicitly chosen before)
-  const manuallyNavigated =
-    (!repoName && translations[parts[0]]) ||
-    (repoName && translations[parts[1]]);
-  if (savedLang && manuallyNavigated) {
-    lang = currentPathLang;
-    localStorage.setItem("lang", lang);
-  }
+//D) Always honor URL folder if it matches a translation
+if (translations[currentPathLang]) {
+  lang = currentPathLang;
+  localStorage.setItem("lang", lang);
+}
+
 
   // E) If our final lang ≠ the URL (normalized), redirect to the correct one
   if (normalizeLangKey(currentPathLang) !== normalizeLangKey(lang)) {
