@@ -14,12 +14,217 @@
 
 <title>ממיר צבעים ל-Wplace</title>
 <!-- Favicon -->
+<link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png" sizes="180x180">
 
-
-
+<link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/he/">
+  <!-- hreflang links -->
+<link rel="alternate" hreflang="en"    href="https://pepoafonso.github.io/color_converter_wplace/" />
+<link rel="alternate" hreflang="pt"    href="https://pepoafonso.github.io/color_converter_wplace/pt/" />
+<link rel="alternate" hreflang="de"    href="https://pepoafonso.github.io/color_converter_wplace/de/" />
+<link rel="alternate" hreflang="es"    href="https://pepoafonso.github.io/color_converter_wplace/es/" />
+<link rel="alternate" hreflang="fr"    href="https://pepoafonso.github.io/color_converter_wplace/fr/" />
+<link rel="alternate" hreflang="he"    href="https://pepoafonso.github.io/color_converter_wplace/he/" />
+<link rel="alternate" hreflang="uk"    href="https://pepoafonso.github.io/color_converter_wplace/uk/" />
+<link rel="alternate" hreflang="vi"    href="https://pepoafonso.github.io/color_converter_wplace/vi/" />
+<link rel="alternate" hreflang="pl"    href="https://pepoafonso.github.io/color_converter_wplace/pl/" />
+<link rel="alternate" hreflang="ja"    href="https://pepoafonso.github.io/color_converter_wplace/ja/" />
+<link rel="alternate" hreflang="de-CH" href="https://pepoafonso.github.io/color_converter_wplace/de-CH/" />
+<link rel="alternate" hreflang="nl"    href="https://pepoafonso.github.io/color_converter_wplace/nl/" />
+<link rel="alternate" hreflang="ru"    href="https://pepoafonso.github.io/color_converter_wplace/ru/" />
+<link rel="alternate" hreflang="tr"    href="https://pepoafonso.github.io/color_converter_wplace/tr/" />
+<link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../main.css" />
 </head>
 <body>
-  <h2>Page not found 404</h2>
-  <a href="https://pepoafonso.github.io/color_converter_wplace/">Return to home page</a>
+  <!-- Header / Nav -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/he/">
+        <img src="../favicon.png" alt="" class="brand-mark" />
+        <span class="brand-name">ממיר צבעים ל-Wplace</span>
+      </a>
+
+      <nav class="primary-nav" aria-label="ראשי"></nav>
+
+      <div class="nav-tools">
+        <select id="lang-select">
+          <option value="en">🇺🇸 English</option>
+          <option value="pt">🇵🇹 Português 🇧🇷</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="he" selected>🇮🇱 עברית</option>
+          <option value="uk">🇺🇦 Українська</option>
+          <option value="vi">🇻🇳 Tiếng Việt</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="de-CH">🇨🇭 Deutsch (Schweiz)</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+        </select>
+
+        <button class="nav-burger" aria-label="פתח תפריט" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page -->
+  <main class="container app">
+    <!-- Left column: Controls -->
+    <section class="panel-left">
+      <div class="card">
+        <div class="custom-upload">
+          <input type="file" id="upload" accept="image/*">
+          <label for="upload" class="upload-box">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">
+              <strong data-i18n="uploadStrong">העלה תמונה</strong>
+              <span data-i18n="uploadSpan">לחץ, הדבק או גרור ושחרר</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="scroll-bar">
+          <label for="scaleRange" data-i18n="scale">קנה מידה</label>
+          <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
+          <span id="scaleValue">1.00x</span>
+        </div>
+
+        <div class="dimensions">
+          <div class="dimension-input">
+            <label for="widthInput" data-i18n="width">רוחב</label>
+            <input type="number" id="widthInput">
+          </div>
+          <div class="dimension-input">
+            <label for="heightInput" data-i18n="height">גובה</label>
+            <input type="number" id="heightInput">
+          </div>
+          <div class="dimension-input">
+            <label data-i18n="area">שטח</label>
+            <div class="area-box" id="area"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
+          <button data-i18n="ditherButton" id="ditherButton" class="btn btn-toggle active">
+            דית'רינג (מומלץ)
+          </button> 
+        </div>
+
+        <!-- Advanced options -->
+        <details id="adv-options" class="adv-card">
+          <summary>
+            <span data-i18n="advancedOptions">אפשרויות מתקדמות</span>
+          </summary>
+          <div class="adv-content">
+            <button id="transparentButton" class="btn btn-toggle"
+              data-i18n="transparentButton"
+              data-i18n-title="transparentButtonTitle"
+              type="button">
+              הסתר פיקסלים חצי־שקופים
+            </button>
+            <button id="opt-toggle-hide-ui" class="btn btn-toggle"
+              data-i18n="hideEyeControls"
+              type="button">
+              הצג/הסתר בקרות הסתרת צבע (עיניים)
+            </button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Right column: Canvas / Actions -->
+    <div class="canvas-wrap card">
+      <div class="canvas-viewport" id="canvasViewport">
+        <canvas id="canvas"></canvas>
+      </div>
+
+      <div class="scroll-bar">
+        <label for="zoomRange" data-i18n="zoom">זום</label>
+        <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
+        <span id="zoomValue">1.00x</span>
+      </div>
+      <div>
+        <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
+          Ctrl + גלילה לזום
+        </small>
+      </div>
+
+      <div class="actions">
+        <a id="download" class="btn" href="#" data-i18n="download">הורד תמונה</a>
+        <button id="clipboard" class="btn" data-i18n="clipboard">העתק ללוח</button>
+      </div>
+    </div>
+</section>
+
+    <!-- Bottom line: Color Selection -->
+    <section class="panel panel-colors">
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+          <p class="section-title" data-i18n="freeColors">צבעים חינמיים</p>
+          <button id="hide-toggle-free" class="btn-eye" title="הסתר את כל הצבעים החינמיים"></button>
+        </div>
+        <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
+          בטל בחירת כל הצבעים החינמיים
+        </button>
+
+        <div id="colors-free" class="chips">
+          <!-- צבעים לא מתורגמים לפי בקשתך -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+          <p class="section-title" data-i18n="paidColors">צבעים בתשלום (2000💧 כל אחד)</p>
+          <button id="hide-toggle-paid" class="btn-eye" title="הסתר את כל הצבעים בתשלום"></button>
+        </div>
+        <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
+          בחר את כל 💧הצבעים בתשלום
+        </button>
+        <div id="colors-paid" class="chips">
+          <!-- צבעים לא מתורגמים לפי בקשתך -->
+        </div>
+      </div>
+
+      <div id="color-list" class="card span-2"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <small>
+        &copy; ממיר צבעים ל-Wplace —
+        <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
+          זכויות יוצרים (c) <span id="year"></span> PEPOAFONSO
+        </a>
+      </small>
+      <div class="footer-links">
+        <a class="nav-link" target="_blank" href="https://wplace.live/">Wplace</a>
+        <a class="nav-link" target="_blank" href="https://github.com/PEPOAFONSO/color_converter_wplace">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../main.js"></script>
+  <script>
+    document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
+    const burger = document.querySelector('.nav-burger');
+    const nav = document.querySelector('.primary-nav');
+    if (burger && nav) {
+      burger.addEventListener('click', () => {
+        const open = nav.style.display === 'flex';
+        nav.style.display = open ? 'none' : 'flex';
+        burger.setAttribute('aria-expanded', String(!open));
+      });
+    }
+  </script>
 </body>
 </html>
