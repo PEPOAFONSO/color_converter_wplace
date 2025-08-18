@@ -482,7 +482,7 @@ function showColorUsage(colorCounts = {}, order = 'original') {
         ? `${name}: ${count} px`
         : `${name}: ${count} px`;
       
-      // Differenciate Paid colors
+      // Differentiate Paid colors
       const isPaid = paidColors.has(key);
       if (isPaid) label.style.color = 'gold';
     }
