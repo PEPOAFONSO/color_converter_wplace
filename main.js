@@ -436,6 +436,20 @@ if (heightInput) {
 }
 }
 
+// Read column choice (default 3)
+function getColorColumnCount() {
+  const defaultColumns = 3;
+  const maxColumns = 4;
+  const columnCount = document.getElementById('color-columns-manual-count');
+  const value = columnCount ? parseInt(columnCount.value, 10) : defaultColumns;
+  return Number.isFinite(value) && value > 0 ? Math.min(maxColumns, value) : defaultColumns;
+}
+
+// Read chosen mode: 'dynamic' or 'manual'
+function getColumnMode() {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
+}
 
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
@@ -452,6 +466,17 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   }).filter(item => item.count > 0 || item.hidden);
 
   colorListDiv.innerHTML = '';
+
+  // Dynamic or Manual columns
+  const colorColumnMode = getColumnMode();
+  const colorColumnCount = getColorColumnCount();
+
+  if (colorColumnMode === 'dynamic') {
+    colorListDiv.classList.add('dynamic');
+  } else {
+    colorListDiv.classList.remove('dynamic');
+    colorListDiv.style.setProperty('--color-list-template', `repeat(${colorColumnCount}, minmax(0, 1fr))`);
+  }
 
   const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
 
@@ -489,6 +514,27 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   });
 }
 
+// Re-render when user changes columns, mode or sort order
+document.addEventListener('DOMContentLoaded', () => {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  const manual = document.getElementById('color-columns-manual');
+  const columnCount = document.getElementById('color-columns-manual-count');
+
+  const triggerRerender = () => {
+    if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
+  };
+
+  if (dynamic) dynamic.addEventListener('change', triggerRerender);
+  if (manual) manual.addEventListener('change', triggerRerender);
+  if (columnCount) columnCount.addEventListener('change', triggerRerender);
+
+  // also re-run when sort radio changes (existing)
+  document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
+    });
+  });
+});
 
 // --- Script for select All buttons ---
 
@@ -1134,6 +1180,9 @@ const translations = {
     sort: "Sort by",
     sortOriginal: "Original",
     sortCount: "Most used",
+    columns: "Columns",
+    columnsDynamic: "Dynamic",
+    columnsManual: "Manual",
   },
   pt: {
     title: "Conversor de Cores Wplace",
@@ -1816,9 +1865,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
   apply(); // set initial state
 });
-
-document.querySelectorAll('input[name="colors-list-order"]').forEach(radio => {
-  radio.addEventListener('change', (event) => {
-    if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
-  })
-})
