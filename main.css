@@ -83,7 +83,7 @@ body {
 .nav-burger span{display:block; height:2px; background:var(--text); margin:6px 8px}
 
 /* Language Selector */
-#lang-select {
+select {
   background: #222;
   color: #ffffff;
   font-weight: 600;
@@ -100,14 +100,24 @@ body {
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 10px 7px;
+}
+
+#lang-select{
+  padding: 8px 12px;
   min-width: 150px;
 }
-#lang-select:hover, #lang-select:focus {
+
+select:hover:not([disabled]),
+select:focus:not([disabled]) {
   background: #1a1a1a;
   border-color: var(--brand);
   border: 2px solid var(--brand) !important;
   box-shadow: 0 0 10px #00eaff88;
   outline: none;
+}
+
+select[disabled] {
+  opacity: 0.5;
 }
 
 /* ---------- Page Layout ---------- */
@@ -528,10 +538,12 @@ main { flex: 1; } /* ensure body gradient fills page */
 
   /* 2) Header tweaks */
   .brand-name{ font-size: 1.15rem; }
-  #lang-select{
-    min-width: 120px;
+  select {
     font-size: .95rem;
     padding: 6px 10px;
+  }
+  #lang-select{
+    min-width: 120px;
   }
   .primary-nav{ display:none }   /* your burger could toggle this if you want */
   .nav-burger{ display:block }
