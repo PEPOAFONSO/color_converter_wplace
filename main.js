@@ -451,6 +451,16 @@ function getColumnMode() {
   return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
 }
 
+// Enable/Disable the select based on the current mode
+function syncColumnCountSelectState() {
+  const columnCount = document.getElementById('color-columns-manual-count');
+  if (!columnCount) return;
+  const mode = getColumnMode();
+  columnCount.disabled = (mode === 'dynamic');
+  // update aria attribute for accessibility
+  columnCount.setAttribute('aria-disabled', String(columnCount.disabled));
+}
+
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
   const colorListDiv = document.getElementById('color-list');
@@ -521,8 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const columnCount = document.getElementById('color-columns-manual-count');
 
   const triggerRerender = () => {
+    syncColumnCountSelectState();
     if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
   };
+
+  syncColumnCountSelectState();
 
   if (dynamic) dynamic.addEventListener('change', triggerRerender);
   if (manual) manual.addEventListener('change', triggerRerender);
