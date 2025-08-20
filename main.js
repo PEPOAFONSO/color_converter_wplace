@@ -1228,6 +1228,9 @@ const translations = {
     sort: "Ordenar por",
     sortOriginal: "Original",
     sortCount: "Mais frequentes",
+    columns: "Colunas",
+    columnsDynamic: "Dinâmico",
+    columnsManual: "Manual",
   },
   de: {
     title: "Wplace Farbkonverter",
@@ -1260,6 +1263,9 @@ const translations = {
     sort: "Sortieren nach",
     sortOriginal: "Original",
     sortCount: "Am häufigsten verwendet",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   es: {
     title: "Convertidor de Colores Wplace",
@@ -1292,6 +1298,9 @@ const translations = {
     sort: "Ordenar por",
     sortOriginal: "Original",
     sortCount: "Más usados",
+    columns: "Columnas",
+    columnsDynamic: "Dinámico",
+    columnsManual: "Manual",
   },
   fr: {
     title: "Convertisseur de Couleurs Wplace",
@@ -1324,6 +1333,9 @@ const translations = {
     sort: "Trier par",
     sortOriginal: "Original",
     sortCount: "Les plus utilisés",
+    columns: "Colonnes",
+    columnsDynamic: "Dynamique",
+    columnsManual: "Manuel",
   },
   uk: {
     title: "Конвертер кольорів Wplace",
@@ -1356,6 +1368,9 @@ const translations = {
     sort: "Сортувати за",
     sortOriginal: "Оригінал",
     sortCount: "Найбільш використовувані",
+    columns: "Стовпці",
+    columnsDynamic: "Динамічно",
+    columnsManual: "Вручну",
   },
   vi: {
     title: "Trình chuyển đổi màu Wplace",
@@ -1388,6 +1403,9 @@ const translations = {
     sort: "Sắp xếp theo",
     sortOriginal: "Gốc",
     sortCount: "Sử dụng nhiều nhất",
+    columns: "Cột",
+    columnsDynamic: "Tự động",
+    columnsManual: "Thủ công",
   },
   ja: {
     title: "Wplace カラーコンバーター",
@@ -1420,6 +1438,9 @@ const translations = {
     sort: "並べ替え",
     sortOriginal: "オリジナル",
     sortCount: "最も使用された",
+    columns: "列",
+    columnsDynamic: "動的",
+    columnsManual: "手動",
   },
   pl: {
     title: "Konwerter Kolorów Wplace",
@@ -1452,6 +1473,9 @@ const translations = {
     sort: "Sortuj według",
     sortOriginal: "Oryginalne",
     sortCount: "Najczęściej używane",
+    columns: "Kolumny",
+    columnsDynamic: "Dynamiczny",
+    columnsManual: "Ręczny",
   },
   de_CH: {
     title: "Wplace Farbkonverter",
@@ -1484,6 +1508,9 @@ const translations = {
     sort: "Sortieren nach",
     sortOriginal: "Original",
     sortCount: "Am häufigsten verwendet",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   nl: {
     title: "Wplace Kleurconverter",
@@ -1512,6 +1539,9 @@ const translations = {
     sort: "Sorteren op",
     sortOriginal: "Origineel",
     sortCount: "Meest gebruikt",
+    columns: "Kolommen",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Handmatig",
   },
   ru: {
     title: "Конвертер цветов Wplace",
@@ -1544,6 +1574,9 @@ const translations = {
     sort: "Сортировать по",
     sortOriginal: "Оригинал",
     sortCount: "Наиболее используемые",
+    columns: "Столбцы",
+    columnsDynamic: "Динамический",
+    columnsManual: "Вручную",
   },
   tr: {
     title: "Wplace Renk Dönüştürücü",
@@ -1576,6 +1609,9 @@ const translations = {
     sort: "Sırala",
     sortOriginal: "Orijinal",
     sortCount: "En çok kullanılan",
+    columns: "Sütunlar",
+    columnsDynamic: "Dinamik",
+    columnsManual: "Manuel",
   },
 };
 
