@@ -436,6 +436,30 @@ if (heightInput) {
 }
 }
 
+// Read column choice (default 3)
+function getColorColumnCount() {
+  const defaultColumns = 3;
+  const maxColumns = 4;
+  const columnCount = document.getElementById('color-columns-manual-count');
+  const value = columnCount ? parseInt(columnCount.value, 10) : defaultColumns;
+  return Number.isFinite(value) && value > 0 ? Math.min(maxColumns, value) : defaultColumns;
+}
+
+// Read chosen mode: 'dynamic' or 'manual'
+function getColumnMode() {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
+}
+
+// Enable/Disable the select based on the current mode
+function syncColumnCountSelectState() {
+  const columnCount = document.getElementById('color-columns-manual-count');
+  if (!columnCount) return;
+  const mode = getColumnMode();
+  columnCount.disabled = (mode === 'dynamic');
+  // update aria attribute for accessibility
+  columnCount.setAttribute('aria-disabled', String(columnCount.disabled));
+}
 
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
@@ -452,6 +476,17 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   }).filter(item => item.count > 0 || item.hidden);
 
   colorListDiv.innerHTML = '';
+
+  // Dynamic or Manual columns
+  const colorColumnMode = getColumnMode();
+  const colorColumnCount = getColorColumnCount();
+
+  if (colorColumnMode === 'dynamic') {
+    colorListDiv.classList.add('dynamic');
+  } else {
+    colorListDiv.classList.remove('dynamic');
+    colorListDiv.style.setProperty('--color-list-template', `repeat(${colorColumnCount}, minmax(0, 1fr))`);
+  }
 
   const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
 
@@ -493,6 +528,30 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   });
 }
 
+// Re-render when user changes columns, mode or sort order
+document.addEventListener('DOMContentLoaded', () => {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  const manual = document.getElementById('color-columns-manual');
+  const columnCount = document.getElementById('color-columns-manual-count');
+
+  const triggerRerender = () => {
+    syncColumnCountSelectState();
+    if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
+  };
+
+  syncColumnCountSelectState();
+
+  if (dynamic) dynamic.addEventListener('change', triggerRerender);
+  if (manual) manual.addEventListener('change', triggerRerender);
+  if (columnCount) columnCount.addEventListener('change', triggerRerender);
+
+  // also re-run when sort radio changes (existing)
+  document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
+    });
+  });
+});
 
 // --- Script for select All buttons ---
 
@@ -1138,6 +1197,9 @@ const translations = {
     sort: "Sort by",
     sortOriginal: "Original",
     sortCount: "Most used",
+    columns: "Columns",
+    columnsDynamic: "Dynamic",
+    columnsManual: "Manual",
   },
   pt: {
     title: "Conversor de Cores Wplace",
@@ -1170,6 +1232,9 @@ const translations = {
     sort: "Ordenar por",
     sortOriginal: "Original",
     sortCount: "Mais frequentes",
+    columns: "Colunas",
+    columnsDynamic: "Dinâmico",
+    columnsManual: "Manual",
   },
   de: {
     title: "Wplace Farbkonverter",
@@ -1202,6 +1267,9 @@ const translations = {
     sort: "Sortieren nach",
     sortOriginal: "Original",
     sortCount: "Am häufigsten verwendet",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   es: {
     title: "Convertidor de Colores Wplace",
@@ -1234,6 +1302,9 @@ const translations = {
     sort: "Ordenar por",
     sortOriginal: "Original",
     sortCount: "Más usados",
+    columns: "Columnas",
+    columnsDynamic: "Dinámico",
+    columnsManual: "Manual",
   },
   fr: {
     title: "Convertisseur de Couleurs Wplace",
@@ -1266,6 +1337,9 @@ const translations = {
     sort: "Trier par",
     sortOriginal: "Original",
     sortCount: "Les plus utilisés",
+    columns: "Colonnes",
+    columnsDynamic: "Dynamique",
+    columnsManual: "Manuel",
   },
   uk: {
     title: "Конвертер кольорів Wplace",
@@ -1298,6 +1372,9 @@ const translations = {
     sort: "Сортувати за",
     sortOriginal: "Оригінал",
     sortCount: "Найбільш використовувані",
+    columns: "Стовпці",
+    columnsDynamic: "Динамічно",
+    columnsManual: "Вручну",
   },
   vi: {
     title: "Trình chuyển đổi màu Wplace",
@@ -1330,6 +1407,9 @@ const translations = {
     sort: "Sắp xếp theo",
     sortOriginal: "Gốc",
     sortCount: "Sử dụng nhiều nhất",
+    columns: "Cột",
+    columnsDynamic: "Tự động",
+    columnsManual: "Thủ công",
   },
   ja: {
     title: "Wplace カラーコンバーター",
@@ -1362,6 +1442,9 @@ const translations = {
     sort: "並べ替え",
     sortOriginal: "オリジナル",
     sortCount: "最も使用された",
+    columns: "列",
+    columnsDynamic: "動的",
+    columnsManual: "手動",
   },
   pl: {
     title: "Konwerter Kolorów Wplace",
@@ -1394,6 +1477,9 @@ const translations = {
     sort: "Sortuj według",
     sortOriginal: "Oryginalne",
     sortCount: "Najczęściej używane",
+    columns: "Kolumny",
+    columnsDynamic: "Dynamiczny",
+    columnsManual: "Ręczny",
   },
   de_CH: {
     title: "Wplace Farbkonverter",
@@ -1426,6 +1512,9 @@ const translations = {
     sort: "Sortieren nach",
     sortOriginal: "Original",
     sortCount: "Am häufigsten verwendet",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   nl: {
     title: "Wplace Kleurconverter",
@@ -1454,6 +1543,9 @@ const translations = {
     sort: "Sorteren op",
     sortOriginal: "Origineel",
     sortCount: "Meest gebruikt",
+    columns: "Kolommen",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Handmatig",
   },
   ru: {
     title: "Конвертер цветов Wplace",
@@ -1486,6 +1578,9 @@ const translations = {
     sort: "Сортировать по",
     sortOriginal: "Оригинал",
     sortCount: "Наиболее используемые",
+    columns: "Столбцы",
+    columnsDynamic: "Динамический",
+    columnsManual: "Вручную",
   },
   tr: {
     title: "Wplace Renk Dönüştürücü",
@@ -1518,6 +1613,9 @@ const translations = {
     sort: "Sırala",
     sortOriginal: "Orijinal",
     sortCount: "En çok kullanılan",
+    columns: "Sütunlar",
+    columnsDynamic: "Dinamik",
+    columnsManual: "Manuel",
   },
 };
 
@@ -1820,9 +1918,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
   apply(); // set initial state
 });
-
-document.querySelectorAll('input[name="colors-list-order"]').forEach(radio => {
-  radio.addEventListener('change', (event) => {
-    if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
-  })
-})
