@@ -453,6 +453,18 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 
   colorListDiv.innerHTML = '';
 
+  //create row listing total number of pixels
+  const totalPixelCount = Object.values(colorCounts).reduce((prev, curr) => prev + curr, 0);
+  const totalRow = document.createElement('div');
+  totalRow.className = 'usage-item';
+  totalRow.style.display = 'flex';
+  totalRow.style.alignItems = 'center';
+  totalRow.style.marginBottom = '6px';
+  const totalLabel = document.createElement('span');
+  totalLabel.textContent = `Total Pixels: ${totalPixelCount}`
+  totalRow.appendChild(totalLabel);
+  colorListDiv.appendChild(totalRow);
+
   const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
 
   rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
