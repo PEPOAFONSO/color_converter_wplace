@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta name="google-site-verification" content="wHXxUrLL9Fnw-T9w50zILQ4PlwFotRNyXsA0fzRBmWU" />
 <meta charset="UTF-8">
-<meta property="og:title" content="Wplace Color Converter">
-<meta property="og:description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more...">
-<meta name="description" content="An Open-source and safe website that converts the colours of your images and pixel arts to the available in Wplace, scaling, translations and much more..." />
+<meta property="og:title" content="Wplace 色彩转换器">
+<meta property="og:description" content="一个开源且安全的网站，可以将图片和像素画的颜色转换为 Wplace 中可用的颜色、缩放、翻译等等......">
+<meta name="description" content="一个开源且安全的网站，可以将图片和像素画的颜色转换为 Wplace 中可用的颜色、缩放、翻译等等......" />
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/">
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#D60270">
 <meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/">
 
-<title>Wplace Color Converter</title>
+<title>Wplace 色彩转换器</title>
 <!-- Favicon -->
 <link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.png?v=2" type="image/png" sizes="32x32">
 <link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.ico?v=2" type="image/x-icon">
@@ -36,15 +36,15 @@
 <link rel="alternate" hreflang="sc"    href="https://pepoafonso.github.io/color_converter_wplace/sc/" />
 <link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="main.css" />
+<link rel="stylesheet" href="../main.css" />
 </head>
 <body>
   <!-- Header / Nav -->
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="/">
-        <img src="favicon.png" alt="" class="brand-mark" />
-        <span class="brand-name">Wplace Color Converter</span>
+        <img src="../favicon.png" alt="" class="brand-mark" />
+        <span class="brand-name">Wplace 色彩转换器</span>
       </a>
 
       <nav class="primary-nav" aria-label="Primary">
@@ -86,8 +86,8 @@
           <label for="upload" class="upload-box">
             <div class="upload-icon">📤</div>
             <div class="upload-text">
-              <strong data-i18n="uploadStrong">Upload Image</strong>
-              <span data-i18n="uploadSpan">Click, paste or drag & drop</span>
+              <strong data-i18n="uploadStrong">上传图片</strong>
+              <span data-i18n="uploadSpan">点击, 粘贴或拖放</span>
             </div>
           </label>
         </div>
@@ -95,35 +95,35 @@
 
       <div class="card">
         <div class="scroll-bar">
-          <label for="scaleRange" data-i18n="scale">Scale</label>
+          <label for="scaleRange" data-i18n="scale">比例</label>
           <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
           <span id="scaleValue">1.00x</span>
         </div>
 
         <div class="dimensions">
           <div class="dimension-input">
-            <label for="widthInput" data-i18n="width">Width</label>
+            <label for="widthInput" data-i18n="width">宽度</label>
             <input type="number" id="widthInput">
           </div>
           <div class="dimension-input">
-            <label for="heightInput" data-i18n="height">Height</label>
+            <label for="heightInput" data-i18n="height">高度</label>
             <input type="number" id="heightInput">
           </div>
           <div class="dimension-input">
-            <label data-i18n="area">Area</label>
+            <label data-i18n="area">面积</label>
             <div class="area-box" id="area"></div>
           </div>
         </div>
         <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
         <button data-i18n="ditherButton"
                 id="ditherButton" class="btn btn-toggle active">
-          Dithering (Recommended)
+          抖动处理（推荐）
         </button> 
       </div>
       <!-- Advanced options -->
       <details id="adv-options" class="adv-card">
         <summary>
-          <span data-i18n="advancedOptions">Advanced options</span>
+          <span data-i18n="advancedOptions">高级选项</span>
         </summary>
 
         <div class="adv-content">
@@ -134,7 +134,7 @@
             data-i18n="transparentButton"
             data-i18n-title="transparentButtonTitle"
             type="button">
-            Hide Semi-Transparent Pixels
+            隐藏半透明的像素
           </button>
 
           <!-- Show/hide the “eyes” UI (toggle button) -->
@@ -143,7 +143,7 @@
             class="btn btn-toggle"
             data-i18n="hideEyeControls"
             type="button">
-            Show color‑hiding controls (eyes)
+            显示颜色隐藏控件（眼睛）
           </button>
         </div>
       </details>
@@ -158,19 +158,19 @@
 
       <!-- visual separator + zoom -->
       <div class="scroll-bar">
-        <label for="zoomRange" data-i18n="zoom">Zoom</label>
+        <label for="zoomRange" data-i18n="zoom">缩放</label>
         <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
         <span id="zoomValue">1.00x</span>
         </div>
         <div>
         <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
-        Ctrl + Scroll to zoom
+        Ctrl+鼠标滚轮来调整缩放大小
         </small>
       </div>
 
       <div class="actions">
-        <a id="download" class="btn" href="#" data-i18n="download">Download Image</a>
-        <button id="clipboard" class="btn" data-i18n="clipboard">Copy to Clipboard</button>
+        <a id="download" class="btn" href="#" data-i18n="download">下载图片</a>
+        <button id="clipboard" class="btn" data-i18n="clipboard">复制到剪贴板</button>
       </div>
     </div>
 
@@ -182,12 +182,12 @@
 <div class="card">
 
   <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-    <p class="section-title" data-i18n="freeColors">Free Colors</p>
+    <p class="section-title" data-i18n="freeColors">免费颜色</p>
     <button id="hide-toggle-free" class="btn-eye" title="Hide all free colors"></button>
   </div>
 
   <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
-    Unselect All Free Colors
+    取消选择所有免费的颜色
   </button>
 
   <!-- Color chips -->
@@ -230,11 +230,11 @@
     <!-- Paid (right) -->
     <div class="card">
      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="paidColors">Paid Colors (2000💧each)</p>
+      <p class="section-title" data-i18n="paidColors">付费颜色 (每种 2000💧)</p>
       <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
     </div>
       <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
-        Select All 💧Paid Colors
+        选择所有💧付费颜色
       </button>
       <div id="colors-paid" class="chips">
     <button id="33" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
@@ -288,7 +288,7 @@
 <footer class="site-footer">
   <div class="container footer-content">
     <small>
-      &copy; Wplace Color Converter —
+      &copy; Wplace 色彩转换器 —
       <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
         Copyright (c) <span id="year"></span> PEPOAFONSO
       </a>
@@ -300,7 +300,7 @@
     </div>
   </div>
 </footer>
-  <script src="main.js"></script>
+  <script src="../main.js"></script>
   <script>
     // Footer year
     document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
