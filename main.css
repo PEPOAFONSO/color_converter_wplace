@@ -610,16 +610,8 @@ h2#title, h2 {
     gap: 16px;
   }
 
-  /* 2) Header tweaks */
-  .brand-name{ font-size: 1.15rem; }
-  select {
-    font-size: .95rem;
-    padding: 6px 10px;
-  }
-  #lang-select{
-    min-width: 120px;
-  }
   /* Header row */
+  .header-inner{ height: 64px; }
   .primary-nav{ display:none; }
   .nav-burger{ display:block; }
 

@@ -280,6 +280,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collection",
+    columns: "Columns",
+    columnsDynamic: "Dynamic",
+    columnsManual: "Manual",
   },
   pt: {
     galleryPageTitle: "A Minha Galeria – Wplace Color Converter",
@@ -325,6 +328,9 @@ window.translations = {
     viewerNamePlaceholder: "Nome…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Coleção",
+    columns: "Colunas",
+    columnsDynamic: "Dinâmico",
+    columnsManual: "Manual",
   },
   de: {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -370,6 +376,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   "de-CH": {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -415,6 +424,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   es: {
     galleryPageTitle: "Mi Galería – Wplace Color Converter",
@@ -460,6 +472,9 @@ window.translations = {
     viewerNamePlaceholder: "Nombre…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Colección",
+    columns: "Columnas",
+    columnsDynamic: "Dinámico",
+    columnsManual: "Manual",
   },
   fr: {
     galleryPageTitle: "Ma Galerie – Wplace Color Converter",
@@ -505,6 +520,9 @@ window.translations = {
     viewerNamePlaceholder: "Nom…",
     viewerTagsPlaceholder: "Étiquettes…",
     viewerCollectionPlaceholder: "Collection",
+    columns: "Colonnes",
+    columnsDynamic: "Dynamique",
+    columnsManual: "Manuel",
   },
   uk: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -550,6 +568,9 @@ window.translations = {
     viewerNamePlaceholder: "Ім’я…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Колекція",
+    columns: "Стовпці",
+    columnsDynamic: "Динамічно",
+    columnsManual: "Вручну",
   },
   vi: {
     galleryPageTitle: "Thư viện của tôi – Wplace Color Converter",
@@ -595,6 +616,9 @@ window.translations = {
     viewerNamePlaceholder: "Tên…",
     viewerTagsPlaceholder: "Thẻ…",
     viewerCollectionPlaceholder: "Bộ sưu tập",
+    columns: "Cột",
+    columnsDynamic: "Tự động",
+    columnsManual: "Thủ công",
   },
   pl: {
     galleryPageTitle: "Moja Galeria – Wplace Color Converter",
@@ -640,6 +664,9 @@ window.translations = {
     viewerNamePlaceholder: "Nazwa…",
     viewerTagsPlaceholder: "Tagi…",
     viewerCollectionPlaceholder: "Kolekcja",
+    columns: "Kolumny",
+    columnsDynamic: "Dynamiczny",
+    columnsManual: "Ręczny",
   },
   ja: {
     galleryPageTitle: "マイギャラリー – Wplace Color Converter",
@@ -685,6 +712,9 @@ window.translations = {
     viewerNamePlaceholder: "名前…",
     viewerTagsPlaceholder: "タグ…",
     viewerCollectionPlaceholder: "コレクション",
+    columns: "列",
+    columnsDynamic: "動的",
+    columnsManual: "手動",
   },
   nl: {
     galleryPageTitle: "Mijn Galerij – Wplace Color Converter",
@@ -730,6 +760,9 @@ window.translations = {
     viewerNamePlaceholder: "Naam…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collectie",
+    columns: "Kolommen",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Handmatig",
   },
   ru: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -775,6 +808,9 @@ window.translations = {
     viewerNamePlaceholder: "Имя…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Коллекция",
+    columns: "Столбцы",
+    columnsDynamic: "Динамический",
+    columnsManual: "Вручную",
   },
   tr: {
     galleryPageTitle: "Galerim – Wplace Color Converter",
@@ -820,5 +856,8 @@ window.translations = {
     viewerNamePlaceholder: "Ad…",
     viewerTagsPlaceholder: "Etiketler…",
     viewerCollectionPlaceholder: "Koleksiyon",
+    columns: "Sütunlar",
+    columnsDynamic: "Dinamik",
+    columnsManual: "Manuel",
   }
 };
