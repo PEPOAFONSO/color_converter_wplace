@@ -517,6 +517,15 @@ h2#title, h2 {
 .canvas-viewport:active { cursor: grabbing; }
 
 /* hide only inside the canvas viewport */
+.canvas-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.canvas-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
 .canvas-viewport > #canvas{
   width:auto !important;

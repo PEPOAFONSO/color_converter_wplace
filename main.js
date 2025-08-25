@@ -1435,7 +1435,8 @@ function isDitheringOn() {
     localStorage.setItem(DITHER_KEY, String(next));
 
 if (originalImage) {
-  reprocessWithCurrentPalette();
+    applyScale();
+    applyPreview();
 }
 
   });
