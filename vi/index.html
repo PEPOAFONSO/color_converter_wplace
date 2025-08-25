@@ -1,25 +1,24 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta name="google-site-verification" content="wHXxUrLL9Fnw-T9w50zILQ4PlwFotRNyXsA0fzRBmWU" />
 <meta charset="UTF-8">
-<meta property="og:title" content="Bộ Chuyển Đổi Màu Wplace">
-<meta property="og:description" content="Một trang web mã nguồn mở và an toàn, giúp chuyển đổi màu của hình ảnh và pixel art sang các màu có sẵn trong Wplace, với chức năng thu phóng, dịch thuật và nhiều tính năng khác...">
-<meta name="description" content="Một trang web mã nguồn mở và an toàn, giúp chuyển đổi màu của hình ảnh và pixel art sang các màu có sẵn trong Wplace, với chức năng thu phóng, dịch thuật và nhiều tính năng khác..." />
+<meta property="og:title" content="Wplace Trình chuyển đổi màu sắc">
+<meta property="og:description" content="Một trang web mã nguồn mở và an toàn giúp chuyển đổi màu sắc của hình ảnh và pixel art của bạn sang những màu có sẵn trong Wplace, với tính năng thu phóng, dịch thuật và nhiều hơn nữa...">
+<meta name="description" content="Một trang web mã nguồn mở và an toàn giúp chuyển đổi màu sắc của hình ảnh và pixel art của bạn sang những màu có sẵn trong Wplace, với tính năng thu phóng, dịch thuật và nhiều hơn nữa..." />
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/vi/">
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#D60270">
-<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/vi/">
 
-<title>Bộ Chuyển Đổi Màu Wplace</title>
+<title>Wplace Trình chuyển đổi màu sắc</title>
 <!-- Favicon -->
-<link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.png?v=2" type="image/png" sizes="32x32">
-<link rel="icon" href="https://pepoafonso.github.io/color_converter_wplace/favicon.ico?v=2" type="image/x-icon">
-<link rel="apple-touch-icon" href="https://pepoafonso.github.io/color_converter_wplace/apple-touch-icon.png?v=2" sizes="180x180">
+<link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png" sizes="180x180">
 
 <link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/vi/">
-  <!-- hreflang links -->
+
+<!-- hreflang links -->
 <link rel="alternate" hreflang="en"    href="https://pepoafonso.github.io/color_converter_wplace/" />
 <link rel="alternate" hreflang="pt"    href="https://pepoafonso.github.io/color_converter_wplace/pt/" />
 <link rel="alternate" hreflang="de"    href="https://pepoafonso.github.io/color_converter_wplace/de/" />
@@ -33,23 +32,32 @@
 <link rel="alternate" hreflang="nl"    href="https://pepoafonso.github.io/color_converter_wplace/nl/" />
 <link rel="alternate" hreflang="ru"    href="https://pepoafonso.github.io/color_converter_wplace/ru/" />
 <link rel="alternate" hreflang="tr"    href="https://pepoafonso.github.io/color_converter_wplace/tr/" />
-<link rel="alternate" hreflang="sc"    href="https://pepoafonso.github.io/color_converter_wplace/sc/" />
+<link rel="alternate" hreflang="zh-CN"    href="https://pepoafonso.github.io/color_converter_wplace/zh-CN/" />
 <link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../main.css" />
 </head>
-<body>
-  <!-- Header / Nav -->
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="/vi/">
-        <img src="../favicon.png" alt="" class="brand-mark" />
-        <span class="brand-name">Bộ Chuyển Đổi Màu Wplace</span>
-      </a>
+<body class="home">
+<div id="global-toast"></div>
 
-      <nav class="primary-nav" aria-label="Primary">
-
+<header class="site-header">
+  <div class="container header-inner">
+    <div id="menuBackdrop" class="menu-backdrop" hidden></div>
+    <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
+      <nav class="mobile-menu-inner" aria-label="Mobile">
+        <a class="menu-item" href="../gallery.html" data-keep-lang>Thư viện</a>
       </nav>
+    </div>
+
+    <a class="brand" href="../">
+      <img src="../favicon.png" alt="" class="brand-mark" />
+      <span class="brand-name">Wplace Trình chuyển đổi màu sắc</span>
+    </a>
+
+    <nav class="primary-nav" aria-label="Primary">
+      <a class="nav-link" href="../gallery.html" data-keep-lang>Thư viện</a>
+    </nav>
 
       <div class="nav-tools">
         <select id="lang-select">
@@ -66,125 +74,113 @@
           <option value="nl">🇳🇱 Nederlands</option>
           <option value="ru">🇷🇺 Русский</option>
           <option value="tr">🇹🇷 Türkçe</option>
-          <option value="sc">🇨🇳 简体中文</option>
+          <option value="zh-CN">🇨🇳 简体中文</option>
         </select>
 
-        <button class="nav-burger" aria-label="Mở menu" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
+      <button class="nav-burger" aria-label="Mở menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container app">
+  <section class="panel-left">
+    <div class="card">
+      <div class="custom-upload">
+        <input type="file" id="upload" accept="image/*">
+        <label for="upload" class="upload-box">
+          <div class="upload-icon">📤</div>
+          <div class="upload-text">
+            <strong>Tải hình ảnh lên</strong>
+            <span>Bấm, dán hoặc kéo & thả</span>
+          </div>
+        </label>
       </div>
     </div>
-  </header>
 
-  <!-- Page -->
-  <main class="container app">
-    <!-- Left column: Controls -->
-    <section class="panel-left">
-      <div class="card">
-        <div class="custom-upload">
-          <input type="file" id="upload" accept="image/*">
-          <label for="upload" class="upload-box">
-            <div class="upload-icon">📤</div>
-            <div class="upload-text">
-              <strong data-i18n="uploadStrong">Tải ảnh lên</strong>
-              <span data-i18n="uploadSpan">Nhấn, dán hoặc kéo & thả</span>
-            </div>
-          </label>
+    <div class="card">
+      <div class="scroll-bar">
+        <label for="scaleRange">Tỉ lệ</label>
+        <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
+        <span id="scaleValue">1.00x</span>
+      </div>
+
+      <div class="dimensions">
+        <div class="dimension-input">
+          <label for="widthInput">Chiều rộng</label>
+          <input type="number" id="widthInput">
+        </div>
+        <div class="dimension-input">
+          <label for="heightInput">Chiều cao</label>
+          <input type="number" id="heightInput">
+        </div>
+        <div class="dimension-input">
+          <label>Diện tích</label>
+          <input type="number" id="area" readonly>
         </div>
       </div>
 
-      <div class="card">
-        <div class="scroll-bar">
-          <label for="scaleRange" data-i18n="scale">Tỉ lệ</label>
-          <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
-          <span id="scaleValue">1.00x</span>
-        </div>
-
-        <div class="dimensions">
-          <div class="dimension-input">
-            <label for="widthInput" data-i18n="width">Chiều rộng</label>
-            <input type="number" id="widthInput">
-          </div>
-          <div class="dimension-input">
-            <label for="heightInput" data-i18n="height">Chiều cao</label>
-            <input type="number" id="heightInput">
-          </div>
-          <div class="dimension-input">
-            <label data-i18n="area">Diện tích</label>
-            <div class="area-box" id="area"></div>
-          </div>
-        </div>
-        <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
-        <button data-i18n="ditherButton"
-                id="ditherButton" class="btn btn-toggle active">
-          Dithering (Khuyến nghị)
-        </button> 
+      <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
+        <button id="ditherButton" class="btn btn-toggle active">
+          Dithering (Khuyên dùng)
+        </button>
       </div>
-      <!-- Advanced options -->
+
       <details id="adv-options" class="adv-card">
         <summary>
-          <span data-i18n="advancedOptions">Tùy chọn nâng cao</span>
+          <span>Tùy chọn nâng cao</span>
         </summary>
 
         <div class="adv-content">
-          <button
-            id="transparentButton"
-            class="btn btn-toggle"
-            data-i18n="transparentButton"
-            data-i18n-title="transparentButtonTitle"
-            type="button">
-            Ẩn điểm ảnh bán trong suốt
+          <button id="transparentButton" class="btn btn-toggle" type="button">
+            Ẩn các điểm ảnh bán trong suốt
           </button>
 
-          <button
-            id="opt-toggle-hide-ui"
-            class="btn btn-toggle"
-            data-i18n="hideEyeControls"
-            type="button">
-            Hiện/ẩn điều khiển ẩn màu (mắt)
+          <button id="opt-toggle-hide-ui" class="btn btn-toggle" type="button">
+            Hiện/ẩn các điều khiển màu (mắt)
           </button>
         </div>
       </details>
-      </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Right column: Canvas / Actions -->
-    <div class="canvas-wrap card">
-      <div class="canvas-viewport" id="canvasViewport">
-        <canvas id="canvas"></canvas>
-      </div>
-
-      <div class="scroll-bar">
-        <label for="zoomRange" data-i18n="zoom">Thu phóng</label>
-        <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
-        <span id="zoomValue">1.00x</span>
-      </div>
-      <div>
-        <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
-        Ctrl + Cuộn để thu phóng
-        </small>
-      </div>
-
-      <div class="actions">
-        <a id="download" class="btn" href="#" data-i18n="download">Tải ảnh xuống</a>
-        <button id="clipboard" class="btn" data-i18n="clipboard">Sao chép vào bảng tạm</button>
-      </div>
+  <div class="canvas-wrap card">
+    <div class="canvas-viewport" id="canvasViewport">
+      <canvas id="canvas"></canvas>
     </div>
 
-</section>
+    <div class="scroll-bar">
+      <label for="zoomRange">Thu phóng</label>
+      <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
+      <span id="zoomValue">1.00x</span>
+    </div>
+    <div>
+      <small style="display:block; color:#888; font-size:0.85em;">
+        Ctrl + cuộn để thu phóng
+      </small>
+    </div>
 
-    <!-- Bottom line: Color Selection -->
-    <section class="panel panel-colors">
+    <div class="actions">
+      <a id="download" class="btn" href="#">Tải hình ảnh</a>
+      <button id="clipboard" class="btn">Sao chép vào clipboard</button>
+      <button id="addToGallery" class="btn">Thêm vào thư viện</button>
+    </div>
+  </div>
+
+  <section class="panel panel-colors">
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="freeColors">Màu miễn phí</p>
-      <button id="hide-toggle-free" class="btn-eye" title="Ẩn tất cả màu miễn phí"></button>
+        <p class="section-title">Màu miễn phí</p>
+        <button id="hide-toggle-free" class="btn-eye" title="Ẩn tất cả màu miễn phí"></button>
       </div>
-      <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
+
+      <button class="btn" data-type="free" id="unselect-all-free">
         Bỏ chọn tất cả màu miễn phí
       </button>
+
       <div id="colors-free" class="chips">
-    <button id="1" class="toggle-color active" data-type=free style="background: rgb(0,0,0); color: #fff;" title="Black: rgb(0, 0, 0)">Black</button>
+	<button id="1" class="toggle-color active" data-type=free style="background: rgb(0,0,0); color: #fff;" title="Black: rgb(0, 0, 0)">Black</button>
     <button id="2" class="toggle-color active" data-type=free style="background: rgb(60,60,60); color: #fff;" title="Dark Gray: rgb(60, 60, 60)">Dark Gray</button>
     <button id="3" class="toggle-color active" data-type=free style="background: rgb(120,120,120);" title="Gray: rgb(120, 120, 120)">Gray</button>
     <button id="4" class="toggle-color active" data-type=free style="background: rgb(210,210,210);" title="Light Gray: rgb(210, 210, 210)">Light Gray</button>
@@ -217,56 +213,58 @@
     <button id="31" class="toggle-color active" data-type=free style="background: rgb(248,178,119);" title="Beige: rgb(248, 178, 119)">Beige</button> 
       </div>
     </div>
+
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="paidColors">Màu trả phí (2000💧mỗi màu)</p>
-      <button id="hide-toggle-paid" class="btn-eye" title="Ẩn tất cả màu trả phí"></button>
+        <p class="section-title">Màu trả phí (2000💧mỗi màu)</p>
+        <button id="hide-toggle-paid" class="btn-eye" title="Ẩn tất cả màu trả phí"></button>
       </div>
-      <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
-        Chọn tất cả 💧màu trả phí
+      <button class="btn" data-type="paid" id="select-all-paid">
+        Chọn tất cả màu 💧trả phí
       </button>
       <div id="colors-paid" class="chips">
-    <button id="33" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
-    <button id="34" class="toggle-color" data-type=paid style="background: rgb(165,14,30); color: #fff;" title="Dark Red: rgb(165,14,30)">Dark Red</button>
-    <button id="35" class="toggle-color" data-type=paid style="background: rgb(250,128,114);" title="Light Red: rgb(250, 128, 114)">Light Red</button>
-    <button id="36" class="toggle-color" data-type=paid style="background: rgb(228,92,26);" title="Dark Orange: rgb(228, 92, 26)">Dark Orange</button>
-    <button id="37" class="toggle-color" data-type=paid style="background: rgb(156, 132, 49);" title="Dark Goldenrod: rgb(156, 132, 49)">Dark Goldenrod</button>
-    <button id="38" class="toggle-color" data-type=paid style="background: rgb(197, 173, 49);" title="Goldenrod: rgb(197, 173, 49)">Goldenrod</button>
-    <button id="39" class="toggle-color" data-type=paid style="background: rgb(232,212,95);" title="Light Goldenrod: rgb(232, 212, 95)">Light Goldenrod</button>
-    <button id="40" class="toggle-color" data-type=paid style="background: rgb(74,107,58); color: #fff;" title="Dark Olive: rgb(74, 107, 58)">Dark Olive</button>
-    <button id="41" class="toggle-color" data-type=paid style="background: rgb(90,148,74);" title="Olive: rgb(90, 148, 74)">Olive</button>
-    <button id="42" class="toggle-color" data-type=paid style="background: rgb(132,197,115);" title="Light Olive: rgb(132, 197, 115)">Light Olive</button>
-    <button id="43" class="toggle-color" data-type=paid style="background: rgb(15,121,159); color: #fff;" title="Dark Cyan: rgb(15, 121, 159)">Dark Cyan</button>
-    <button id="44" class="toggle-color" data-type=paid style="background: rgb(187,250,242);" title="Light Cyan: rgb(187, 250, 242)">Light Cyan</button>
-    <button id="45" class="toggle-color" data-type=paid style="background: rgb(125, 199, 255);" title="Light Blue: rgb(125, 199, 255)">Light Blue</button>
-    <button id="46" class="toggle-color" data-type=paid style="background: rgb(77,49,184); color: #fff;" title="Dark Indigo: rgb(77, 49, 184)">Dark Indigo</button>
-    <button id="47" class="toggle-color" data-type=paid style="background: rgb(74,66,132); color: #fff;" title="Dark Slate Blue: rgb(74, 66, 132)">Dark Slate Blue</button>
-    <button id="48" class="toggle-color" data-type=paid style="background: rgb(122,113,196);" title="Slate Blue: rgb(122, 113, 196)">Slate Blue</button>
-    <button id="49" class="toggle-color" data-type=paid style="background: rgb(181,174,241);" title="Light Slate Blue: rgb(181, 174, 241)">Light Slate Blue</button>
-    <button id="50" class="toggle-color" data-type=paid style="background: rgb(155,82,73);" title="Dark Peach: rgb(155, 82, 73)">Dark Peach</button>
-    <button id="51" class="toggle-color" data-type=paid style="background: rgb(209,128,120);" title="Peach: rgb(209, 128, 120)">Peach</button>
-    <button id="52" class="toggle-color" data-type=paid style="background: rgb(250,182,164);" title="Light Peach: rgb(250, 182, 164)">Light Peach</button>
-    <button id="53" class="toggle-color" data-type=paid style="background: rgb(219,164,99);" title="Light Brown: rgb(219, 164, 99)">Light Brown</button>
-    <button id="54" class="toggle-color" data-type=paid style="background: rgb(123,99,82);" title="Dark Tan: rgb(123, 99, 82)">Dark Tan</button>
-    <button id="55" class="toggle-color" data-type=paid style="background: rgb(156,132,107);" title="Tan: rgb(156, 132, 107)">Tan</button>
-    <button id="56" class="toggle-color" data-type=paid style="background: rgb(214,181,148);" title="Light Tan: rgb(214, 181, 148)">Light Tan</button>
-    <button id="57" class="toggle-color" data-type=paid style="background: rgb(209,128,81);" title="Dark Beige: rgb(209, 128, 81)">Dark Beige</button>
-    <button id="58" class="toggle-color" data-type=paid style="background: rgb(255,197,165);" title="Light Beige: rgb(255, 197, 165)">Light Beige</button>
-    <button id="59" class="toggle-color" data-type=paid style="background: rgb(109,100,63);" title="Dark Stone: rgb(109, 100, 63)">Dark Stone</button>
-    <button id="60" class="toggle-color" data-type=paid style="background: rgb(148,140,107);" title="Stone: rgb(148, 140, 107)">Stone</button>
-    <button id="61" class="toggle-color" data-type=paid style="background: rgb(205,197,158);" title="Light Stone: rgb(205, 197, 158)">Light Stone</button>
-    <button id="62" class="toggle-color" data-type=paid style="background: rgb(51,57,65); color: #fff;" title="Dark Slate: rgb(51, 57, 65)">Dark Slate</button>
-    <button id="63" class="toggle-color" data-type=paid style="background: rgb(109,117,141);" title="Slate: rgb(109, 117, 141)">Slate</button>
-    <button id="64" class="toggle-color" data-type=paid style="background: rgb(179,185,209);" title="Light Slate: rgb(179, 185, 209)">Light Slate</button> 
+	<button id="32" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
+    <button id="33" class="toggle-color" data-type=paid style="background: rgb(165,14,30); color: #fff;" title="Dark Red: rgb(165,14,30)">Dark Red</button>
+    <button id="34" class="toggle-color" data-type=paid style="background: rgb(250,128,114);" title="Light Red: rgb(250, 128, 114)">Light Red</button>
+    <button id="35" class="toggle-color" data-type=paid style="background: rgb(228,92,26);" title="Dark Orange: rgb(228, 92, 26)">Dark Orange</button>
+    <button id="36" class="toggle-color" data-type=paid style="background: rgb(156, 132, 49);" title="Dark Goldenrod: rgb(156, 132, 49)">Dark Goldenrod</button>
+    <button id="37" class="toggle-color" data-type=paid style="background: rgb(197, 173, 49);" title="Goldenrod: rgb(197, 173, 49)">Goldenrod</button>
+    <button id="38" class="toggle-color" data-type=paid style="background: rgb(232,212,95);" title="Light Goldenrod: rgb(232, 212, 95)">Light Goldenrod</button>
+    <button id="39" class="toggle-color" data-type=paid style="background: rgb(74,107,58); color: #fff;" title="Dark Olive: rgb(74, 107, 58)">Dark Olive</button>
+    <button id="40" class="toggle-color" data-type=paid style="background: rgb(90,148,74);" title="Olive: rgb(90, 148, 74)">Olive</button>
+    <button id="41" class="toggle-color" data-type=paid style="background: rgb(132,197,115);" title="Light Olive: rgb(132, 197, 115)">Light Olive</button>
+    <button id="42" class="toggle-color" data-type=paid style="background: rgb(15,121,159); color: #fff;" title="Dark Cyan: rgb(15, 121, 159)">Dark Cyan</button>
+    <button id="43" class="toggle-color" data-type=paid style="background: rgb(187,250,242);" title="Light Cyan: rgb(187, 250, 242)">Light Cyan</button>
+    <button id="44" class="toggle-color" data-type=paid style="background: rgb(125, 199, 255);" title="Light Blue: rgb(125, 199, 255)">Light Blue</button>
+    <button id="45" class="toggle-color" data-type=paid style="background: rgb(77,49,184); color: #fff;" title="Dark Indigo: rgb(77, 49, 184)">Dark Indigo</button>
+    <button id="46" class="toggle-color" data-type=paid style="background: rgb(74,66,132); color: #fff;" title="Dark Slate Blue: rgb(74, 66, 132)">Dark Slate Blue</button>
+    <button id="47" class="toggle-color" data-type=paid style="background: rgb(122,113,196);" title="Slate Blue: rgb(122, 113, 196)">Slate Blue</button>
+    <button id="48" class="toggle-color" data-type=paid style="background: rgb(181,174,241);" title="Light Slate Blue: rgb(181, 174, 241)">Light Slate Blue</button>
+    <button id="49" class="toggle-color" data-type=paid style="background: rgb(155,82,73);" title="Dark Peach: rgb(155, 82, 73)">Dark Peach</button>
+    <button id="50" class="toggle-color" data-type=paid style="background: rgb(209,128,120);" title="Peach: rgb(209, 128, 120)">Peach</button>
+    <button id="51" class="toggle-color" data-type=paid style="background: rgb(250,182,164);" title="Light Peach: rgb(250, 182, 164)">Light Peach</button>
+    <button id="52" class="toggle-color" data-type=paid style="background: rgb(219,164,99);" title="Light Brown: rgb(219, 164, 99)">Light Brown</button>
+    <button id="53" class="toggle-color" data-type=paid style="background: rgb(123,99,82);" title="Dark Tan: rgb(123, 99, 82)">Dark Tan</button>
+    <button id="54" class="toggle-color" data-type=paid style="background: rgb(156,132,107);" title="Tan: rgb(156, 132, 107)">Tan</button>
+    <button id="55" class="toggle-color" data-type=paid style="background: rgb(214,181,148);" title="Light Tan: rgb(214, 181, 148)">Light Tan</button>
+    <button id="56" class="toggle-color" data-type=paid style="background: rgb(209,128,81);" title="Dark Beige: rgb(209, 128, 81)">Dark Beige</button>
+    <button id="57" class="toggle-color" data-type=paid style="background: rgb(255,197,165);" title="Light Beige: rgb(255, 197, 165)">Light Beige</button>
+    <button id="58" class="toggle-color" data-type=paid style="background: rgb(109,100,63);" title="Dark Stone: rgb(109, 100, 63)">Dark Stone</button>
+    <button id="59" class="toggle-color" data-type=paid style="background: rgb(148,140,107);" title="Stone: rgb(148, 140, 107)">Stone</button>
+    <button id="60" class="toggle-color" data-type=paid style="background: rgb(205,197,158);" title="Light Stone: rgb(205, 197, 158)">Light Stone</button>
+    <button id="61" class="toggle-color" data-type=paid style="background: rgb(51,57,65); color: #fff;" title="Dark Slate: rgb(51, 57, 65)">Dark Slate</button>
+    <button id="62" class="toggle-color" data-type=paid style="background: rgb(109,117,141);" title="Slate: rgb(109, 117, 141)">Slate</button>
+    <button id="63" class="toggle-color" data-type=paid style="background: rgb(179,185,209);" title="Light Slate: rgb(179, 185, 209)">Light Slate</button> 
       </div>
     </div>
+
     <div>
-      <p class="section-title" data-i18n="sort"></p>
+      <p class="section-title">Sắp xếp theo</p>
       <input type="radio" name="colors-list-order" id="original" value="original" checked>
-      <label for="original" data-i18n="sortOriginal"></label>
+      <label for="original">Gốc</label>
 
       <input type="radio" name="colors-list-order" id="used" value="used">
-      <label for="used" data-i18n="sortCount"></label>
+      <label for="used">Được dùng nhiều nhất</label>
     </div>
     <div id="color-list" class="card span-2"></div>
   </section>
@@ -275,7 +273,7 @@
 <footer class="site-footer">
   <div class="container footer-content">
     <small>
-      &copy; Bộ Chuyển Đổi Màu Wplace —
+      &copy; Wplace Trình chuyển đổi màu sắc —
       <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
         Copyright (c) <span id="year"></span> PEPOAFONSO
       </a>
@@ -287,18 +285,11 @@
     </div>
   </div>
 </footer>
-  <script src="../main.js"></script>
-  <script>
-    document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
-    const burger = document.querySelector('.nav-burger');
-    const nav = document.querySelector('.primary-nav');
-    if (burger && nav) {
-      burger.addEventListener('click', () => {
-        const open = nav.style.display === 'flex';
-        nav.style.display = open ? 'none' : 'flex';
-        burger.setAttribute('aria-expanded', String(!open));
-      });
-    }
-  </script>
+<script src="../translations.js"></script>
+<script src="../toast.js"></script>
+<script src="../main.js"></script>
+<script>
+  document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
+</script>
 </body>
 </html>

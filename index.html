@@ -33,22 +33,31 @@
 <link rel="alternate" hreflang="nl"    href="https://pepoafonso.github.io/color_converter_wplace/nl/" />
 <link rel="alternate" hreflang="ru"    href="https://pepoafonso.github.io/color_converter_wplace/ru/" />
 <link rel="alternate" hreflang="tr"    href="https://pepoafonso.github.io/color_converter_wplace/tr/" />
-<link rel="alternate" hreflang="sc"    href="https://pepoafonso.github.io/color_converter_wplace/sc/" />
+<link rel="alternate" hreflang="zh-CN"    href="https://pepoafonso.github.io/color_converter_wplace/zh-CN/" />
 <link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="main.css" />
 </head>
-<body>
+<body class="home">
+<div id="global-toast"></div>
   <!-- Header / Nav -->
   <header class="site-header">
     <div class="container header-inner">
+    <!-- Backdrop + dropdown menu (mobile) -->
+    <div id="menuBackdrop" class="menu-backdrop" hidden></div>
+    <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
+      <nav class="mobile-menu-inner" aria-label="Mobile">
+        <a class="menu-item" href="gallery.html" data-keep-lang>Gallery</a>
+        <!--<hr class="menu-sep" />-->
+      </nav>
+    </div>
       <a class="brand" href="/">
         <img src="favicon.png" alt="" class="brand-mark" />
         <span class="brand-name">Wplace Color Converter</span>
       </a>
 
       <nav class="primary-nav" aria-label="Primary">
-
+      <a class="nav-link" href="gallery.html" data-keep-lang>Gallery</a>
       </nav>
 
       <div class="nav-tools">
@@ -66,7 +75,7 @@
           <option value="nl">🇳🇱 Nederlands</option>
           <option value="ru">🇷🇺 Русский</option>
           <option value="tr">🇹🇷 Türkçe</option>
-          <option value="sc">🇨🇳 简体中文</option>
+          <option value="zh-CN">🇨🇳 简体中文</option>
         </select>
 
         <button class="nav-burger" aria-label="Open menu" aria-expanded="false">
@@ -111,7 +120,7 @@
           </div>
           <div class="dimension-input">
             <label data-i18n="area">Area</label>
-            <div class="area-box" id="area"></div>
+            <input type="number" id="area" readonly>
           </div>
         </div>
         <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
@@ -171,6 +180,7 @@
       <div class="actions">
         <a id="download" class="btn" href="#" data-i18n="download">Download Image</a>
         <button id="clipboard" class="btn" data-i18n="clipboard">Copy to Clipboard</button>
+        <button id="addToGallery" class="btn">Add to Gallery</button>
       </div>
     </div>
 
@@ -274,12 +284,12 @@
 
     <!-- Color List -->
     <div>
-      <p class="section-title" data-i18n="sort"></p>
+      <p class="section-title">Sort By</p>
       <input type="radio" name="colors-list-order" id="original" value="original" checked>
-      <label for="original" data-i18n="sortOriginal"></label>
+      <label for="original">Original</label>
 
       <input type="radio" name="colors-list-order" id="used" value="used">
-      <label for="used" data-i18n="sortCount"></label>
+      <label for="used">Most Used</label>
     </div>
     <div id="color-list" class="card span-2"></div>
   </section>
@@ -300,20 +310,12 @@
     </div>
   </div>
 </footer>
+  <script src="translations.js"></script>
+  <script src="toast.js"></script>
   <script src="main.js"></script>
   <script>
     // Footer year
     document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
-    // Mobile burger
-    const burger = document.querySelector('.nav-burger');
-    const nav = document.querySelector('.primary-nav');
-    if (burger && nav) {
-      burger.addEventListener('click', () => {
-        const open = nav.style.display === 'flex';
-        nav.style.display = open ? 'none' : 'flex';
-        burger.setAttribute('aria-expanded', String(!open));
-      });
-    }
   </script>
 </body>
 </html>
