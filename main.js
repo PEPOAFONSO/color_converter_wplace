@@ -558,6 +558,7 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
 
   rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
+  rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
     const row = document.createElement('div');
     row.className = 'usage-item' + (hidden ? ' hidden' : '');
     row.style.display = 'flex';
@@ -583,6 +584,10 @@ function showColorUsage(colorCounts = {}, order = 'original') {
       label.textContent = hidden
         ? `${name}: ${count} px`
         : `${name}: ${count} px`;
+      
+      // Differentiate Paid colors
+      const isPaid = paidColors.has(key);
+      if (isPaid) label.style.color = 'gold';
       
       // Differentiate Paid colors
       const isPaid = paidColors.has(key);
