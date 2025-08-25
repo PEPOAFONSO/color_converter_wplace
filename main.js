@@ -1,3 +1,7 @@
+// =======================
+//   Wplace Main Script
+// =======================
+
 /*
   [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
   [96,0,24],[165, 14, 30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
@@ -120,23 +124,45 @@ const heightInput = document.getElementById('heightInput');
 
 let padrao = [];
 
+function rgbFromChip(btn) {
+  // 1) inline style (stable under Dark Reader)
+  let s = btn.style.backgroundColor;       // e.g. "rgb(249, 221, 59)"
+  if (s) {
+    const m = s.match(/(\d+)\D+(\d+)\D+(\d+)/);
+    if (m) return [ +m[1], +m[2], +m[3] ];
+  }
+  // 2) raw style attribute (extra safety)
+  s = btn.getAttribute('style') || '';
+  let m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (m) return [ +m[1], +m[2], +m[3] ];
+  // 3) title attribute fallback: "Name: rgb(r, g, b)"
+  s = btn.getAttribute('title') || '';
+  m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (m) return [ +m[1], +m[2], +m[3] ];
+  return null;
+}
+
 function updatePadraoFromActiveButtons() {
   padrao = [];
-  let colorActiveSave = [];
-  const activeButtons = document.querySelectorAll('#colors-free .toggle-color.active, #colors-paid .toggle-color.active');
+  const activeButtons = document.querySelectorAll(
+    '#colors-free .toggle-color.active, #colors-paid .toggle-color.active'
+  );
+
+  const idsToSave = [];
   activeButtons.forEach(btn => {
-    const bg = window.getComputedStyle(btn).backgroundColor;
-    const rgbMatch = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    if (rgbMatch) {
-      const r = parseInt(rgbMatch[1], 10);
-      const g = parseInt(rgbMatch[2], 10);
-      const b = parseInt(rgbMatch[3], 10);
-      padrao.push([r, g, b]);
-    }
-    colorActiveSave.push(btn.id);
+    const rgb = rgbFromChip(btn);          // <<< use this
+    if (rgb) padrao.push(rgb);
+    idsToSave.push(btn.id);
   });
-  localStorage.setItem('activeColors', JSON.stringify(colorActiveSave));
+
+  localStorage.setItem('activeColors', JSON.stringify(idsToSave));
+
+  if (originalImage) {
+    applyScale();
+    applyPreview();
+  }
 }
+
 
 const upload = document.getElementById('upload');
 const canvas = document.getElementById('canvas');
@@ -144,54 +170,55 @@ const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const downloadLink = document.getElementById('download');
 
 // Clipboard
-function showCustomToast(message) {
-  const toastBtn = document.getElementById('clipboard');
-  if (!toastBtn) return;
-  const originalText = toastBtn.textContent;
-  toastBtn.textContent = message;
-  toastBtn.style.background = '#ff4d4d';
-  toastBtn.style.color = '#fff';
-  setTimeout(() => {
-    toastBtn.textContent = originalText;
-    toastBtn.style.background = '';
-    toastBtn.style.color = '';
-  }, 1800);
-}
-
 document.getElementById('clipboard').addEventListener('click', async function () {
-  const canvas = document.getElementById('canvas');
-  if (!canvas) return;
+  // Prefer processedCanvas; fallback to main canvas if needed
+  const c = finalizeToPalette();
 
-  const ctx = canvas.getContext('2d');
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-  let allTransparent = true;
-  for (let i = 3; i < imageData.length; i += 4) {
-    if (imageData[i] !== 0) {
-      allTransparent = false;
-      break;
-    }
-  }
+  const lang = (typeof getCurrentLang === 'function' ? getCurrentLang() : 'en');
+  const t = (typeof translations !== 'undefined' && translations[lang]) || {};
 
-  const lang = getCurrentLang();
-  const t = translations[lang] || translations['en'];
-
-  if (allTransparent) {
-    showCustomToast(t.imageNotFound);
+  if (!c || !c.width || !c.height) {
+    showToast(t.imageNotFound || "No image loaded.", "error");
     return;
   }
 
-  canvas.toBlob(async (blob) => {
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      showCustomToast(t.imageCopied);
-    } catch (err) {
-      showCustomToast(t.copyFailed);
-    }
-  }, 'image/png');
+  // Don't copy if fully transparent
+  const empty = (typeof canvasIsEmpty === 'function')
+    ? canvasIsEmpty(c)
+    : (() => {
+        const ctx = c.getContext('2d');
+        const data = ctx.getImageData(0, 0, c.width, c.height).data;
+        for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+        return true;
+      })();
+
+  if (empty) {
+    showToast(t.imageNotFound || "No image loaded.", "error");
+    return;
+  }
+
+  const doCopy = (blob) => {
+    if (!blob) { showToast(t.copyFailed || "Copy failed.", "error"); return; }
+    navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ])
+      .then(() => showToast(t.copiedClipboard || "Copied to clipboard!", "success"))
+      .catch(() => showToast(t.copyFailed || "Copy failed.", "error"));
+  };
+
+  if (c.toBlob) {
+    c.toBlob(doCopy, 'image/png');
+  } else {
+    // Fallback for older browsers
+    const dataURL = c.toDataURL('image/png');
+    const b64 = dataURL.split(',')[1] || "";
+    const bin = atob(b64);
+    const u8  = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    doCopy(new Blob([u8], { type: 'image/png' }));
+  }
 });
+
+
 
 // Handle paste events to allow image pasting
 document.addEventListener('paste', function (event) {
@@ -247,6 +274,80 @@ function corMaisProxima(r, g, b) {
   }
   return cor;
 }
+
+function hardClampToPalette(c, palette) {
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i+3] === 0) continue; // skip transparent
+    const [nr, ng, nb] = corMaisProxima(d[i], d[i+1], d[i+2]);
+    d[i] = nr; d[i+1] = ng; d[i+2] = nb; d[i+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function finalizeToPalette() {
+  // ensure processedCanvas exists
+  if (!processedCanvas) {
+    processedCanvas = document.createElement('canvas');
+    processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
+    processedCanvas.width  = canvas.width;
+    processedCanvas.height = canvas.height;
+    processedCtx.drawImage(canvas, 0, 0);
+  }
+
+  // clamp everything to your palette and zero RGB for transparent pixels
+  const pctx = processedCanvas.getContext('2d');
+  const img  = pctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
+  const d    = img.data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i+3] === 0) {          // fully transparent -> zero RGB
+      d[i] = d[i+1] = d[i+2] = 0;
+      continue;
+    }
+    const [nr, ng, nb] = corMaisProxima(d[i], d[i+1], d[i+2]);
+    d[i]   = nr;
+    d[i+1] = ng;
+    d[i+2] = nb;
+    d[i+3] = 255;
+  }
+
+  pctx.putImageData(img, 0, 0);
+  return processedCanvas;
+}
+
+// Global variables for image size
+let currentImageWidth = null;
+let currentImageHeight = null;
+let fileName = "";
+
+// --- Make Home honor ?lang=xx on load and sync UI ---
+(function ensureLangFromURL() {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (q && window.setCurrentLang) {
+    // setCurrentLang persists to localStorage, sets <html lang>, and decorates links
+    window.setCurrentLang(q);
+  } else if (window.initLang) {
+    // fall back to your normal init (reads localStorage / <html lang>)
+    window.initLang();
+  }
+  // apply translations right away
+  window.applyTranslations?.(document);
+
+  // sync both selectors to the active lang
+  const lang = (window.getCurrentLang && window.getCurrentLang()) || "en";
+  ["lang-select", "lang-select-menu"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = lang;
+    el?.addEventListener("change", (e) => {
+      window.setCurrentLang(e.target.value);
+      window.applyTranslations?.(document);
+    });
+  });
+})();
 
 // Dithering helper function
 function clampByte(v){ return v < 0 ? 0 : v > 255 ? 255 : v; }
@@ -395,45 +496,46 @@ function processarImagem() {
     ctx.putImageData(imgData, 0, 0);
   }
 
-  // --- keep processedCanvas/UI in sync right here ---
-  if (!processedCanvas) {
-    processedCanvas = document.createElement('canvas');
-    processedCtx = processedCanvas.getContext('2d');
-  }
-  processedCanvas.width  = canvas.width;
-  processedCanvas.height = canvas.height;
-  processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
-  processedCtx.drawImage(canvas, 0, 0);
+// --- keep processedCanvas/UI in sync right here ---
+processedCanvas = document.createElement('canvas');
+processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
+processedCanvas.width  = canvas.width;
+processedCanvas.height = canvas.height;
+processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+processedCtx.drawImage(canvas, 0, 0);
 
-  downloadLink.href = canvas.toDataURL('image/png');
-  downloadLink.download = `converted_${fileName}`;
-  showImageInfo(canvas.width, canvas.height);
-  if (colorCounts) showColorUsage(colorCounts, getColorsListOrder());
+// Final authoritative palette pass + export
+const exportCanvas = finalizeToPalette();
+downloadLink.href = exportCanvas.toDataURL('image/png');
 
-  _colorCounts = colorCounts
+// Normalize filename to .png (handles svg/jpg/etc.)
+const base = (fileName || 'image').replace(/\.[^.]+$/,'').trim() || 'image';
+downloadLink.download = `converted_${base}.png`;
 
-  return colorCounts;
+showImageInfo(canvas.width, canvas.height);
+if (colorCounts) showColorUsage(colorCounts, getColorsListOrder());
+
+_colorCounts = colorCounts;
+
+return colorCounts;
 }
-
-
 
 // Image info display
 function showImageInfo(width, height) {
-  const langSelect = document.getElementById('lang-select');
-  const lang       = (langSelect && langSelect.value) || 'en';
-  const t          = translations[lang];
+  if (width == null || height == null) return;
 
-// grab the new fields
-const widthInput  = document.getElementById('widthInput');
-const heightInput = document.getElementById('heightInput');
+  const wIn = document.getElementById("widthInput");
+  const hIn = document.getElementById("heightInput");
+  const aBx = document.getElementById("area");
 
-// only write if they actually exist
-if (widthInput) {
-  widthInput.value = width;
-}
-if (heightInput) {
-  heightInput.value = height;
-}
+  if (wIn) wIn.value = width;
+  if (hIn) hIn.value = height;
+
+  if (aBx) {
+    const area = width * height;
+    if ("value" in aBx) aBx.value = area;
+    else aBx.textContent = String(area);
+  }
 }
 
 // Read column choice (default 3)
@@ -553,156 +655,179 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// --- Script for select All buttons ---
+// --- Script for Select All buttons (translation-free, label via data-attrs) ---
 
-// Free Colors
-document.addEventListener('DOMContentLoaded', () => {
-  const masterBtn    = document.getElementById('unselect-all-free');
-  const freeButtons  = Array.from(document.querySelectorAll('#colors-free .toggle-color[data-type="free"]'));
-  function t(key) {
-    const lang = getCurrentLang();
-    return (translations[lang] || translations.en)[key];
-  }
+(function selectAllSection({
+  masterId,
+  scopeSelector,
+  dataType,
+  storageKey,
+  defaultOn = false, // free: true (on first visit), paid: false
+  fallbackSelect,
+  fallbackUnselect
+}) {
+  document.addEventListener("DOMContentLoaded", () => {
+    const masterBtn   = document.getElementById(masterId);
+    const colorBtns   = Array.from(document.querySelectorAll(`${scopeSelector} .toggle-color[data-type="${dataType}"]`));
+    if (!masterBtn || !colorBtns.length) return;
 
-  function updateMasterLabel() {
-    const allActive = freeButtons.every(b => b.classList.contains('active'));
-    masterBtn.textContent = allActive
-      ? t('allButtonfreeUnselect')
-      : t('allButtonfreeSelect');
-  }
+    // ---- helpers ----
+    function getExportCanvas() {
+      return (typeof processedCanvas !== "undefined" && processedCanvas) ? processedCanvas : canvas;
+    }
 
-  function saveActiveColors() {
-    const activeIds = freeButtons
-      .filter(b => b.classList.contains('active'))
-      .map(b => b.id);
-    localStorage.setItem('activeColors', JSON.stringify(activeIds));
-  }
+    const getLabels = () => {
+      const select   = masterBtn.getAttribute("data-label-select")   || fallbackSelect;
+      const unselect = masterBtn.getAttribute("data-label-unselect") || fallbackUnselect;
+      return { select, unselect };
+    };
 
-  // -- LOAD STATE --
-  const raw = localStorage.getItem('activeColors');
-  let saved = [];
-  if (raw !== null) {
-    try { saved = JSON.parse(raw); } catch(e) { console.warn('couldn’t parse saved colors:', raw); }
-  }
+    function updateMasterLabel() {
+      const { select, unselect } = getLabels();
+      const allActive = colorBtns.every(b => b.classList.contains("active"));
+      masterBtn.textContent = allActive ? unselect : select;
+    }
 
-  // Apply saved state or default to ON if none saved
-  const firstVisit = raw === null;
-  freeButtons.forEach(b =>
-    b.classList.toggle('active', firstVisit ? true : saved.includes(b.id))
-  );
+    function saveState() {
+      const activeIds = colorBtns.filter(b => b.classList.contains("active")).map(b => b.id);
+      localStorage.setItem(storageKey, JSON.stringify(activeIds));
+    }
 
-  // Update label now
-  window.addEventListener('load', () => { updateMasterLabel(); });
+    // ---- load state ----
+    const raw   = localStorage.getItem(storageKey);
+    const firstVisit = raw === null;
+    let savedIds = [];
+    if (!firstVisit) {
+      try { savedIds = JSON.parse(raw); } catch { /* ignore parse errors */ }
+    }
 
-  // If it's the first visit, don't save until user interacts
-  if (!firstVisit) {
-    updatePadraoFromActiveButtons();
-  }
+    // apply state
+    colorBtns.forEach(b => {
+      const shouldBeActive = firstVisit ? defaultOn : savedIds.includes(b.id);
+      b.classList.toggle("active", shouldBeActive);
+    });
 
-  // ——— WIRING UP THE CLICK HANDLERS ———
-  freeButtons.forEach(b => {
-    b.addEventListener('click', () => {
-      b.classList.toggle('active');
+    // initial render and derived updates
+    window.addEventListener("load", updateMasterLabel);
+    if (!firstVisit) updatePadraoFromActiveButtons();
 
-      setTimeout(() => {
-        updateMasterLabel();
-        saveActiveColors();
-        updatePadraoFromActiveButtons();
-        if (originalImage) {
-          applyScale?.();
-          applyPreview?.();
-        }
-      }, 0);
+    // single-button toggle
+    colorBtns.forEach(b => {
+      b.addEventListener("click", () => {
+        b.classList.toggle("active");
+        // microtask to let layout settle before expensive work
+        setTimeout(() => {
+          updateMasterLabel();
+          saveState();
+          updatePadraoFromActiveButtons();
+          if (window.originalImage) {
+            reprocessWithCurrentPalette();
+          }
+        }, 0);
+      });
+    });
+
+    // master toggle
+    masterBtn.addEventListener("click", () => {
+      const allActive = colorBtns.every(b => b.classList.contains("active"));
+      colorBtns.forEach(b => b.classList.toggle("active", !allActive));
+
+      updateMasterLabel();
+      saveState();
+      updatePadraoFromActiveButtons();
+      if (window.originalImage) {
+        reprocessWithCurrentPalette();
+      }
     });
   });
-
-  masterBtn.addEventListener('click', () => {
-    const allActive = freeButtons.every(b => b.classList.contains('active'));
-    freeButtons.forEach(b => b.classList.toggle('active', !allActive));
-
-    updateMasterLabel();
-    saveActiveColors();
-    updatePadraoFromActiveButtons();
-    if (originalImage) {
-      applyScale?.();
-      applyPreview?.();
-    }
-  });
+})({
+  // Free Colors
+  masterId: "unselect-all-free",
+  scopeSelector: "#colors-free",
+  dataType: "free",
+  storageKey: "activeColors",
+  defaultOn: true,
+  fallbackSelect: "Select All Free Colors",
+  fallbackUnselect: "Unselect All Free Colors"
 });
 
+(function selectAllSectionPaid() {
+  // Paid Colors
+  (function selectAllSection(config) {
+    document.addEventListener("DOMContentLoaded", () => {
+      const masterBtn   = document.getElementById(config.masterId);
+      const colorBtns   = Array.from(document.querySelectorAll(`${config.scopeSelector} .toggle-color[data-type="${config.dataType}"]`));
+      if (!masterBtn || !colorBtns.length) return;
 
-// Paid Colors
-document.addEventListener('DOMContentLoaded', () => {
-  const masterBtn    = document.getElementById('select-all-paid');
-  const paidButtons  = Array.from(document.querySelectorAll('#colors-paid .toggle-color[data-type="paid"]'));
-  function t(key) {
-    const lang = getCurrentLang();
-    return (translations[lang] || translations.en)[key];
-  }
+      const getLabels = () => {
+        const select   = masterBtn.getAttribute("data-label-select")   || config.fallbackSelect;
+        const unselect = masterBtn.getAttribute("data-label-unselect") || config.fallbackUnselect;
+        return { select, unselect };
+      };
 
-  function updateMasterLabel() {
-    const allActive = paidButtons.every(b => b.classList.contains('active'));
-    masterBtn.textContent = allActive
-      ? t('allButtonpaidUnselect')
-      : t('allButtonpaidSelect');
-  }
+      function updateMasterLabel() {
+        const { select, unselect } = getLabels();
+        const allActive = colorBtns.every(b => b.classList.contains("active"));
+        masterBtn.textContent = allActive ? unselect : select;
+      }
 
-  function saveActiveColorsPaid() {
-    const activeIds = paidButtons
-      .filter(b => b.classList.contains('active'))
-      .map(b => b.id);
-    localStorage.setItem('activeColorsPaid', JSON.stringify(activeIds));
-  }
+      function saveState() {
+        const activeIds = colorBtns.filter(b => b.classList.contains("active")).map(b => b.id);
+        localStorage.setItem(config.storageKey, JSON.stringify(activeIds));
+      }
 
-  // -- LOAD STATE --
-  const raw = localStorage.getItem('activeColorsPaid');
-  let saved = [];
-  if (raw !== null) {
-    try { saved = JSON.parse(raw); } catch(e) { console.warn('couldn’t parse saved paid colors:', raw); }
-  }
+      const raw = localStorage.getItem(config.storageKey);
+      let savedIds = [];
+      if (raw !== null) { try { savedIds = JSON.parse(raw); } catch {} }
 
-  // apply saved (default to OFF for paid if nothing saved)
-  paidButtons.forEach(b =>
-    b.classList.toggle('active', raw !== null ? saved.includes(b.id) : false)
-  );
+      // default OFF for paid if nothing saved
+      colorBtns.forEach(b => {
+        const shouldBeActive = raw !== null ? savedIds.includes(b.id) : false;
+        b.classList.toggle("active", shouldBeActive);
+      });
 
-  window.addEventListener('load', () => { updateMasterLabel(); });
+      window.addEventListener("load", updateMasterLabel);
+      updatePadraoFromActiveButtons();
 
-  // initial draw
-  updatePadraoFromActiveButtons();
+      colorBtns.forEach(b => {
+        b.addEventListener("click", () => {
+          b.classList.toggle("active");
+          setTimeout(() => {
+            updateMasterLabel();
+            saveState();
+            updatePadraoFromActiveButtons();
+            if (window.originalImage) {
+              reprocessWithCurrentPalette();
+            }
+          }, 0);
+        });
+      });
 
-  // single-button toggle
-  paidButtons.forEach(b => {
-    b.addEventListener('click', () => {
-      b.classList.toggle('active');  // ✅ core change
+      masterBtn.addEventListener("click", () => {
+        const allActive = colorBtns.every(b => b.classList.contains("active"));
+        colorBtns.forEach(b => b.classList.toggle("active", !allActive));
 
-      setTimeout(() => {
         updateMasterLabel();
-        saveActiveColorsPaid();
+        saveState();
         updatePadraoFromActiveButtons();
-        if (originalImage) {
-          applyScale?.();
-          applyPreview?.();
+        if (window.originalImage) {
+          reprocessWithCurrentPalette();
         }
-      }, 0);
+      });
     });
+  })({
+    masterId: "select-all-paid",
+    scopeSelector: "#colors-paid",
+    dataType: "paid",
+    storageKey: "activeColorsPaid",
+    fallbackSelect: "Select All Paid Colors",
+    fallbackUnselect: "Unselect All Paid Colors"
   });
-
-  masterBtn.addEventListener('click', () => {
-    const allActive = paidButtons.every(b => b.classList.contains('active'));
-    paidButtons.forEach(b => b.classList.toggle('active', !allActive));
-
-    updateMasterLabel();
-    saveActiveColorsPaid();
-    updatePadraoFromActiveButtons();
-    if (originalImage) {
-      applyScale?.();
-      applyPreview?.();
-    }
-  });
-});
+})();
 
 // --End of Script for buttons--
+
+
 
 // --- Hidden colors (per-chip eye toggle) -------------------------------
 const hiddenColors = new Set();
@@ -725,28 +850,29 @@ function updateEyeForButton(btn) {
 }
 
 function augmentColorChipsWithEye() {
-  document.querySelectorAll('#colors-free .toggle-color, #colors-paid .toggle-color')
-    .forEach(btn => {
-      if (!btn.querySelector('.hide-eye')) {
-        const eye = document.createElement('button');
-        eye.type = 'button';
-        eye.className = 'hide-eye';
-        eye.title = 'Hide color';
-        eye.addEventListener('click', (e) => {
-          e.stopPropagation();                 // don’t toggle selection
-          const key = rgbKeyFromButton(btn);
-          if (!key) return;
-          if (hiddenColors.has(key)) hiddenColors.delete(key);
-          else hiddenColors.add(key);
-          updateEyeForButton(btn);
-          refreshMasterEyes();
-          if (originalImage) { applyScale?.(); applyPreview?.(); }
-        });
-        btn.appendChild(eye);
-      }
-      updateEyeForButton(btn);
-    });
+  const nodeList = document.querySelectorAll('#colors-free .toggle-color, #colors-paid .toggle-color');
+  Array.from(nodeList).forEach(btn => {
+    if (!btn.querySelector('.hide-eye')) {
+      const eye = document.createElement('button');
+      eye.type = 'button';
+      eye.className = 'hide-eye';
+      eye.title = 'Hide color';
+      eye.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = rgbKeyFromButton(btn);
+        if (!key) return;
+        if (hiddenColors.has(key)) hiddenColors.delete(key);
+        else hiddenColors.add(key);
+        updateEyeForButton(btn);
+        refreshMasterEyes();
+        if (window.originalImage) { reprocessWithCurrentPalette(); }
+      });
+      btn.appendChild(eye);
+    }
+    updateEyeForButton(btn);
+  });
 }
+
 
 // Run once and re-run if the lists are rebuilt
 document.addEventListener('DOMContentLoaded', augmentColorChipsWithEye);
@@ -769,8 +895,9 @@ function hideShowAllInSection(selector, hide) {
     if (hide) hiddenColors.add(key); else hiddenColors.delete(key);
     updateEyeForButton(btn);
   });
-  refreshMasterEyes();
-  if (originalImage) { applyScale?.(); applyPreview?.(); }
+  if (originalImage) {
+    reprocessWithCurrentPalette();
+  }
 }
 
 function updateMasterEye(selector, btn) {
@@ -974,20 +1101,21 @@ function applyScale() {
 
 // Core: zoom the processed image into the visible canvas
 function applyPreview() {
+  const src = processedCanvas || canvas;
+  if (!src) { 
+    console.warn('No source for preview'); 
+    return; 
+  }
+
   let zoom = parseFloat(zoomRange?.value);
   if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
-
-  if (!processedCanvas) {
-    console.warn('No processedCanvas, skipping preview');
-    return;
-  }
 
   // no longer clamp zoom to fit — let user zoom out freely
   const effectiveZoom = zoom;
 
   const vp = document.getElementById('canvasViewport');
-  const baseW = processedCanvas.width;
-  const baseH = processedCanvas.height;
+  const baseW = src.width;
+  const baseH = src.height;
 
   // keep viewport center while zooming
   let cx = 0.5, cy = 0.5;
@@ -1005,8 +1133,7 @@ function applyPreview() {
   canvas.height = ph;
   ctx.clearRect(0, 0, pw, ph);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(processedCanvas, 0, 0, baseW, baseH, 0, 0, pw, ph);
-  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(src, 0, 0, baseW, baseH, 0, 0, pw, ph);
 
   // element size so viewport can scroll/pan
   canvas.style.width  = pw + 'px';
@@ -1033,6 +1160,7 @@ function applyPreview() {
   // update label
   zoomValue.textContent = effectiveZoom.toFixed(2) + 'x';
 }
+
 
 
 
@@ -1623,163 +1751,132 @@ const translations = {
 document.addEventListener("DOMContentLoaded", () => {
   const parts = window.location.pathname.split("/").filter(Boolean);
 
-  // A) repoName vs local‐mode
-  let repoName = "", currentPathLang = "en";
+  // ---------- helpers ----------
+  const normalize = s => (s || "").replace(/_/g, "-").toLowerCase();
+  const SUPPORTED = [
+    "en","pt","de","de-CH","es","fr","uk","vi","pl","ja","nl","ru","tr"
+  ];
+  const SUP_NORM = SUPPORTED.map(normalize);
 
-  // Helper to normalize folder/lang code for comparison
-  const normalizeLangKey = str => str ? str.replace('-', '_').toLowerCase() : "";
+  const isLang = seg => SUP_NORM.includes(normalize(seg));
+  const last = arr => arr[arr.length - 1] || "";
 
-  // Get a normalized list of all available translation keys
-  const translationKeys = Object.keys(translations).map(k => normalizeLangKey(k));
+  // Detect repoName and current path lang
+  let repoName = "";
+  let langFromPath = "en";
+  let pathAfterLang = ""; // e.g. "gallery.html" or "index.html"
 
-  // Check first path part (local mode)
-  if (translationKeys.includes(normalizeLangKey(parts[0]))) {
-    currentPathLang = Object.keys(translations).find(
-      k => normalizeLangKey(k) === normalizeLangKey(parts[0])
-    );
-  } else {
-    // Pages mode with repoName
-    repoName = parts[0] || "";
-    if (translationKeys.includes(normalizeLangKey(parts[1]))) {
-      currentPathLang = Object.keys(translations).find(
-        k => normalizeLangKey(k) === normalizeLangKey(parts[1])
-      );
+  if (parts.length) {
+    if (isLang(parts[0])) {
+      // /<lang>/...
+      langFromPath = parts[0];
+      pathAfterLang = parts.slice(1).join("/") || "index.html";
+    } else {
+      // maybe /<repo>/... or /<page>
+      repoName = parts[0];
+      if (parts.length > 1 && isLang(parts[1])) {
+        langFromPath = parts[1];
+        pathAfterLang = parts.slice(2).join("/") || "index.html";
+      } else {
+        // no lang in path
+        langFromPath = "en";
+        pathAfterLang = parts.slice(1).join("/") || (parts.length ? last(parts) : "index.html");
+        if (!parts[1]) {
+          pathAfterLang = parts[0] || "index.html";
+          repoName = "";
+        }
+      }
     }
+  } else {
+    langFromPath = "en";
+    pathAfterLang = "index.html";
+  }
+
+  // Normalize page name
+  if (!/\.(html?)$/i.test(pathAfterLang)) {
+    pathAfterLang = (pathAfterLang.replace(/\/+$/, "") || "index") + ".html";
   }
 
   const base = repoName ? `/${repoName}` : "";
 
-  // B) Grab savedLang _before_ any detection
-  const savedLang = localStorage.getItem("lang");
-
-  // C) Load or detect (but don’t overwrite savedLang yet)
-  let lang = savedLang;
-  if (!lang) {
+  // ---------- load or derive saved lang ----------
+  let savedLang = localStorage.getItem("lang");
+  if (!savedLang) {
     const nav = (navigator.language || "en").toLowerCase();
-    lang = translations[nav]
-      ? nav
-      : translations[nav.split("-")[0]]
-        ? nav.split("-")[0]
-        : "en";
-    // now persist it
-    localStorage.setItem("lang", lang);
+    const navBase = nav.split("-")[0];
+    savedLang =
+      SUP_NORM.includes(normalize(nav)) ? nav :
+      SUP_NORM.includes(normalize(navBase)) ? navBase : "en";
+    localStorage.setItem("lang", savedLang);
   }
 
-//D) Always honor URL folder if it matches a translation
-if (translations[currentPathLang]) {
-  lang = currentPathLang;
-  localStorage.setItem("lang", lang);
-}
-
-
-  // E) If our final lang ≠ the URL (normalized), redirect to the correct one
-  if (normalizeLangKey(currentPathLang) !== normalizeLangKey(lang)) {
-    const dest = lang === "en"
-      ? `${base}/`
-      : `${base}/${lang}/`;
-    window.location.replace(window.location.origin + dest);
+  // ---------- redirect if URL lang ≠ savedLang ----------
+  if (normalize(langFromPath) !== normalize(savedLang) && pathAfterLang !== "gallery.html") {
+    const use = savedLang;
+    const dest =
+      normalize(use) === "en"
+        ? `${base}/${pathAfterLang}`
+        : `${base}/${use}/${pathAfterLang}`;
+    window.location.replace(dest);
     return;
   }
 
-  // F) Wire up the selector
+  // ---------- hook up selector ----------
   const select = document.getElementById("lang-select");
   if (select) {
-    select.value = lang;
+    select.value = savedLang;
+
     select.addEventListener("change", () => {
       const chosen = select.value;
       localStorage.setItem("lang", chosen);
 
-      // Remove repoName if present
-      let pathParts = window.location.pathname.split("/").filter(Boolean);
-      if (repoName) pathParts.shift();
-
-      // Remove existing lang if present (normalized check)
-      if (translationKeys.includes(normalizeLangKey(pathParts[0]))) {
-        pathParts.shift();
+      let target;
+      if (pathAfterLang === "gallery.html") {
+        // Always keep gallery at root, just add query param
+        target = `${base}/gallery.html?lang=${chosen}`;
+      } else {
+        target =
+          normalize(chosen) === "en"
+            ? `${base}/${pathAfterLang}`
+            : `${base}/${chosen}/${pathAfterLang}`;
       }
 
-      // Build new target path
-      const target = chosen === "en"
-        ? `${base}/${pathParts.join("/")}`
-        : `${base}/${chosen}/${pathParts.join("/")}`;
-
-      // Ensure single trailing slash
-      window.location.href = window.location.origin + target.replace(/\/+$/, "") + "/";
+      window.location.href = target;
     });
   }
-
-  // G) Finally, apply in‐page translations
-  applyTranslations(lang);
 });
 
 
 
 
-// Global variables for image size
-let currentImageWidth = null;
-let currentImageHeight = null;
-let fileName = "";
 
-// Helper to get current language from selector
+// Current language getter
 function getCurrentLang() {
-  const langSelect = document.getElementById('lang-select');
-  return (langSelect && langSelect.value) || 'en';
+  return localStorage.getItem("lang") || "en";
 }
 
-// Show image info with translation
-// Show image info by updating the width/height inputs and area‐box
-function showImageInfo(width, height) {
-  const lang = getCurrentLang();
-  const t    = translations[lang];
-  if (width == null || height == null) return;
-
-  const wIn = document.getElementById("widthInput");
-  const hIn = document.getElementById("heightInput");
-  const aBx = document.getElementById("area");
-
-  if (wIn) wIn.value     = width;
-  if (hIn) hIn.value     = height;
-  if (aBx) aBx.textContent = `${width * height}`;
-}
-
-// Refresh width/height/area display
+// Initial refresh
 showImageInfo(currentImageWidth, currentImageHeight);
 
-// Transparent button functionality
+// Transparent button
 document.getElementById('transparentButton').addEventListener('click', function () {
   this.classList.toggle('active');
   localStorage.setItem('transparentHide', this.classList.contains('active'));
-
   updatePadraoFromActiveButtons();
 
-  if (originalImage) {
-    applyScale();
-    applyPreview();
-  }
+if (originalImage) {
+  reprocessWithCurrentPalette();
+}
+
 });
 
+// Only keep for dynamic info (no static translations here)
 function applyTranslations(lang) {
-console.log(document.getElementById("meta-og-title"));
-  // Update visible elements
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const key = el.getAttribute("data-i18n");
-    const titleKey = el.getAttribute('data-i18n-title');
-
-    if (translations[lang]?.[key]) el.textContent = translations[lang][key];
-    if (titleKey && translations[lang]?.[titleKey]) el.title = translations[lang][titleKey];
-  });
-
-  // Update dynamic info if present
   if (currentImageWidth && currentImageHeight) {
-    const t = translations[lang];
-    document.getElementById("width").textContent = `${t.width} ${currentImageWidth}`;
-    document.getElementById("height").textContent = `${t.height} ${currentImageHeight}`;
-    document.getElementById("area").textContent = `${t.area} ${currentImageWidth * currentImageHeight}`;
+    showImageInfo(currentImageWidth, currentImageHeight);
   }
-
-  // Call any additional UI update
-  showImageInfo(currentImageWidth, currentImageHeight);
 }
+
 
 // --- Extra viewport interactions: drag-to-pan + Ctrl/Meta + wheel zoom ---
 (function enhanceViewport() {
@@ -1872,11 +1969,7 @@ function isDitheringOn() {
   // Sync UI
   btn.classList.toggle('active', on);
 
-  // Optional title via i18n
-  const lang = (typeof getCurrentLang === 'function' && getCurrentLang()) || 'en';
-  if (translations?.[lang]?.ditherButtonTitle) {
-    btn.title = translations[lang].ditherButtonTitle;
-  }
+  // (Title comes from your localized HTML; no JS i18n here.)
 
   // Click handler
   btn.addEventListener('click', () => {
@@ -1884,13 +1977,14 @@ function isDitheringOn() {
     btn.classList.toggle('active', next);
     localStorage.setItem(DITHER_KEY, String(next));
 
-    if (originalImage) {
-      applyScale?.();
-      applyPreview?.();
-    }
+if (originalImage) {
+    applyScale();
+    applyPreview();
+}
+
   });
 
-  // 🔹 Force reprocess if active on load and image already loaded
+  // Reprocess if active on load and image already present
   if (on && originalImage) {
     applyScale?.();
     applyPreview?.();
@@ -1917,4 +2011,173 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   apply(); // set initial state
+});
+
+Array.from(document.querySelectorAll('input[name="colors-list-order"]'))
+  .forEach(radio => {
+    radio.addEventListener('change', (event) => {
+      if (_colorCounts) showColorUsage(_colorCounts, event.target.value);
+    });
+  });
+
+
+// Utility: check if a canvas has only transparent pixels
+function canvasIsEmpty(c) {
+  if (!c) return true;
+  const ctx = c.getContext("2d");
+  const data = ctx.getImageData(0, 0, c.width, c.height).data;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false; // found a non-transparent pixel
+  }
+  return true;
+}
+
+// Utility: pick the right canvas (processed if exists, else main)
+function getTargetCanvas() {
+  return (typeof processedCanvas !== "undefined" && processedCanvas) ? processedCanvas : canvas;
+}
+
+// ===============================
+// Save Image to Gallery (localStorage)
+// ===============================
+async function saveImageToGallery(blob) {
+  // Use the same IndexedDB as gallery.js
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("wplaceGallery", 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("images")) {
+        db.createObjectStore("images", { keyPath: "id", autoIncrement: true })
+          .createIndex("created", "created", { unique: false });
+      }
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("images", "readwrite");
+      const store = tx.objectStore("images");
+      const rec = { blob, created: Date.now() };
+      store.add(rec);
+      tx.oncomplete = resolve;
+      tx.onerror = reject;
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ===============================
+// Add to Gallery
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("addToGallery");
+  if (!btn) return;
+  if (btn.dataset.bound === "true") return;
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", () => {
+    // Always use the clamped/processed canvas
+    const c = (typeof finalizeToPalette === "function")
+      ? finalizeToPalette()
+      : (typeof getTargetCanvas === "function" ? getTargetCanvas() : document.getElementById("canvas"));
+
+    const lang = (typeof getCurrentLang === "function" ? getCurrentLang() : "en");
+    const t = (typeof window.translations !== "undefined" && window.translations[lang]) || {};
+
+    if (!c || !c.width || !c.height) {
+      showToast(t.imageNotFound || "No image to add.", "error");
+      return;
+    }
+
+    // Don’t add fully transparent canvases
+    const isEmpty = (function isCanvasEmpty(canvasEl){
+      const _ctx = canvasEl.getContext("2d");
+      const d = _ctx.getImageData(0, 0, canvasEl.width, canvasEl.height).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) return false;
+      return true;
+    })(c);
+
+    if (isEmpty) {
+      showToast(t.imageNotFound || "No image to add.", "error");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+
+    const finish = async (blob) => {
+      if (!blob) {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        showToast(t.saveFailed || "Failed to save image.", "error");
+        return;
+      }
+      try {
+        // Save to localStorage as data URL (PNG)
+        await saveImageToGallery(blob);
+
+        // Make sure the gallery area is visible *now* (when it exists on this page)
+        const area = document.getElementById("galleryArea");
+        if (area) area.hidden = false;
+
+        // Mark last action (optional, gallery can read this)
+        localStorage.setItem("gallery:lastAddedAt", String(Date.now()));
+
+        showToast(t.imageSaved || "Added to gallery!", "success");
+
+        // Redirect to gallery after a brief pause
+        setTimeout(() => {
+          const target = lang === "en" ? "gallery.html" : `gallery.html?lang=${lang}`;
+          window.location.href = target;
+        }, 700);
+      } catch (err) {
+        console.error(err);
+        let msg = t.saveFailed || "Failed to save image.";
+        // Surface quota issues nicely
+        if (String(err).toLowerCase().includes("quota")) {
+          msg = t.storageFull || "Your browser storage is full. Remove some items from the gallery and try again.";
+        }
+        showToast(msg, "error");
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+      }
+    };
+
+    // Always export PNG
+    if (c.toBlob) {
+      c.toBlob(finish, "image/png");
+    } else {
+      const dataURL = c.toDataURL("image/png");
+      const b64 = dataURL.split(",")[1] || "";
+      const bin = atob(b64);
+      const u8  = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      finish(new Blob([u8], { type: "image/png" }));
+    }
+  });
+});
+
+// ---------- Mobile Burger Menu ----------
+document.addEventListener("DOMContentLoaded", () => {
+  const burger   = document.querySelector(".nav-burger");
+  const menu     = document.getElementById("mobileMenu");
+  const backdrop = document.getElementById("menuBackdrop");
+  if (!burger || !menu || !backdrop) return;
+
+  let open = false;
+  function setOpen(v) {
+    open = v;
+    burger.setAttribute("aria-expanded", String(v));
+    menu.classList.toggle("show", v);
+    backdrop.hidden = !v;
+  }
+
+  burger.addEventListener("click", () => setOpen(!open));
+  backdrop.addEventListener("click", () => setOpen(false));
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && open) setOpen(false);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 981 && open) setOpen(false);
+  });
 });

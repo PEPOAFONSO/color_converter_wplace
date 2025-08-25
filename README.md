@@ -3,7 +3,7 @@
   Convert the colors of your image to the available in Wplace.
 </div>
 <br>
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/07544091-2dc9-49b1-baa2-d520ff84f879" />
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/8573c679-1117-42a5-ae86-ea6ab3222bda" />
 <br>
 <h2>License:</h2>
 Copyright (c) 2025 PEPOAFONSO. All rights reserved.
