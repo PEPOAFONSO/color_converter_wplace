@@ -641,11 +641,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
   };
 
+  // Initialize from saved preferences (if any)
+  const savedMode = localStorage.getItem("colorColumnMode");
+  if (savedMode === "dynamic" && dynamic) {
+    dynamic.checked = true;
+  } else if (savedMode === "manual" && manual) {
+    manual.checked = true;
+  }
+
+  const savedCountRaw = localStorage.getItem("columnCount");
+  if (columnCount && savedCountRaw !== null) {
+    const parsed = parseInt(savedCountRaw, 10);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 4) {
+      columnCount.value = String(parsed);
+    }
+  }
+
+  // Ensure select enabled/disabled matches mode right away
   syncColumnCountSelectState();
 
-  if (dynamic) dynamic.addEventListener('change', triggerRerender);
-  if (manual) manual.addEventListener('change', triggerRerender);
-  if (columnCount) columnCount.addEventListener('change', triggerRerender);
+  // Persist changes and re-render
+  if (dynamic) {
+    dynamic.addEventListener('change', () => {
+      const colorColumnMode = getColumnMode();
+      localStorage.setItem("colorColumnMode", colorColumnMode);
+      triggerRerender();
+    });
+  }
+
+  if (manual) {
+    manual.addEventListener('change', () => {
+      const colorColumnMode = getColumnMode();
+      localStorage.setItem("colorColumnMode", colorColumnMode);
+      triggerRerender();
+    });
+  }
+
+  if (columnCount) {
+    columnCount.addEventListener('change', () => {
+      const newCount = getColorColumnCount();
+      localStorage.setItem("columnCount", newCount);
+      triggerRerender();
+    });
+  }
 
   // also re-run when sort radio changes (existing)
   document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
@@ -653,6 +691,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
     });
   });
+
+  // final initial render using saved values (if any)
+  triggerRerender();
 });
 
 // --- Script for Select All buttons (translation-free, label via data-attrs) ---
