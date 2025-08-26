@@ -1,6 +1,6 @@
 // ---- Language runtime (with path + URL propagation) ----
 (function () {
-  const LS_KEY = "wplace.lang";
+  const LS_KEY = "lang";
   const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
 
   const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
@@ -43,29 +43,48 @@ function setCurrentLang(lang) {
 // Compute "repo" (if any) and the current page (index.html / gallery.html)
 function computeRepoAndPage() {
   const raw = location.pathname.replace(/^\/+/, "").split("/");
-  let repo = "";
-  let i = 0;
-
-  // repo if first segment is neither a lang nor an html file
   const isHtml = s => /\.html?$/i.test(s || "");
   const isLang = s => !!(window.matchLang && window.matchLang(s));
 
-  if (raw[i] && !isLang(raw[i]) && !isHtml(raw[i])) {
+  let i = 0;
+  let repo = "";
+
+  // --- Decide repo ---
+  if (!raw[i]) {
+    // no first segment → homepage root
+    repo = "color_converter_wplace";
+  } else if (isLang(raw[i]) || isHtml(raw[i])) {
+    // first segment is a language or html → force fallback repo
+    repo = "color_converter_wplace";
+  } else {
+    // normal case: first segment is the repo
     repo = raw[i++];
   }
+
+  // --- Skip language segment if present ---
   if (raw[i] && isLang(raw[i])) i++;
 
+  // --- Build page path ---
   let page = raw.slice(i).join("/") || "index.html";
-  if (!isHtml(page)) page = (page.replace(/\/+$/, "") || "index") + ".html";
+  if (!isHtml(page)) {
+    page = (page.replace(/\/+$/, "") || "index") + ".html";
+  }
 
   return { repo, page };
 }
+
 
 // Build the target URL for a given language while keeping the same page
 function targetForLang(lang) {
   const use = (window.matchLang && window.matchLang(lang)) || "en";
   const { repo, page } = computeRepoAndPage();
   const base = repo ? `/${repo}` : "";
+
+  if ((page || "").toLowerCase() === "gallery.html") {
+    return `${base}/gallery.html?lang=${use}`;
+  }
+
+  // Other pages: folderized home/locale pages
   const n = (s => (s || "").toLowerCase().replace(/_/g, "-"))(use);
   return n === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
 }
@@ -73,7 +92,7 @@ function targetForLang(lang) {
 // Redirect to the correct folder page and persist language
 function navigateToLang(lang) {
   const use = (window.matchLang && window.matchLang(lang)) || "en";
-  localStorage.setItem("wplace.lang", use);
+  localStorage.setItem("lang", use);
   document.documentElement.setAttribute("lang", use);
   const dest = targetForLang(use);
   window.location.href = dest; // full navigation to folder page
@@ -123,41 +142,50 @@ function decorateLinks(root = document) {
     repoBase = `/${parts[0]}`;
   }
 
-  root.querySelectorAll('a[data-keep-lang]').forEach(a => {
-    const raw = a.getAttribute("href");
-    if (!raw) return;
+root.querySelectorAll('a[data-keep-lang]').forEach(a => {
+  const raw = a.getAttribute("href");
+  if (!raw) return;
 
-    let url;
-    try { url = new URL(raw, location.origin + location.pathname); }
-    catch { return; }
+  let url;
+  try { 
+    // build relative to the site root, never to the current page
+    url = new URL(raw, location.origin);
+  } catch { 
+    return; 
+  }
 
-    // Remove any leading locale folder in the path
-    const segs = url.pathname.replace(/^\/+/, "").split("/");
-    if (segs.length && KNOWN.has(segs[0].toLowerCase())) segs.shift();
+  const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
+  const segs = url.pathname.replace(/^\/+/, "").split("/");
+  if (segs.length && KNOWN.has(segs[0].toLowerCase())) segs.shift();
 
-    const filename = segs[segs.length - 1] || "";
+  const parts = location.pathname.replace(/^\/+/, "").split("/");
+  let repoBase = "";
+  if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
+    repoBase = `/${parts[0]}`;
+  }
 
-    // Special rules:
-    //  - gallery is global: always at /<repo>/gallery.html with ?lang=xx
-    //  - home is localized: /<repo>/<lang>/index.html (or /<repo>/index.html for en)
-    if (/^gallery\.html$/i.test(filename)) {
-      url.pathname = `${repoBase}/gallery.html`;
-      url.searchParams.set("lang", lang);
-    } else if (!filename || /^index\.html$/i.test(filename)) {
-      // home
-      url.pathname = (lang.toLowerCase() === "en")
-        ? `${repoBase}/index.html`
-        : `${repoBase}/${lang}/index.html`;
-      // (no query on home)
-      url.search = "";
-    } else {
-      // any other internal page: strip locale and just keep it under repo
-      url.pathname = `${repoBase}/${segs.join("/")}`;
-      url.searchParams.set("lang", lang);
-    }
+  const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
+  const filename = segs[segs.length - 1] || "";
 
-    a.setAttribute("href", url.pathname + url.search + url.hash);
-  });
+  if (/^gallery\.html$/i.test(filename)) {
+    url.pathname = `${repoBase}/gallery.html`;
+    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
+  } else if (!filename || /^index\.html$/i.test(filename)) {
+    url.pathname = lang.toLowerCase()==="en"
+      ? `${repoBase}/index.html`
+      : `${repoBase}/${lang}/index.html`;
+    url.search = "";
+  } else {
+    url.pathname = `${repoBase}/${segs.join("/")}`;
+    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
+  }
+
+  // safety: no ".html/" endings
+  url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
+
+  // write an ABSOLUTE url (keeps origin so new-tab works)
+  a.setAttribute("href", url.toString());
+});
 }
 
 
@@ -175,30 +203,30 @@ function initLang() {
 
   // helper: compute correct target URL for a given lang
   function targetForLang(lang) {
-    const use = matchLang(lang) || "en";
-    const parts = window.location.pathname.replace(/^\/+/, "").split("/");
-    let repo = "";
-    let page = "index.html";
+  const use = matchLang(lang) || "en";
+  const parts = window.location.pathname.replace(/^\/+/, "").split("/");
+  let repo = "";
+  let page = "index.html";
 
-    // detect repo name
-    if (parts.length && !matchLang(parts[0]) && !/\.html?$/i.test(parts[0])) {
-      repo = parts.shift();
-    }
-    // remove current lang segment
-    if (parts.length && matchLang(parts[0])) {
-      parts.shift();
-    }
-    // remaining path or default
-    page = parts.join("/") || "index.html";
-    if (!/\.html?$/i.test(page)) {
-      page = (page.replace(/\/+$/, "") || "index") + ".html";
-    }
-
-    const base = repo ? `/${repo}` : "";
-    return use === "en"
-      ? `${base}/${page}`
-      : `${base}/${use}/${page}`;
+  if (parts.length && !matchLang(parts[0]) && !/\.html?$/i.test(parts[0])) {
+    repo = parts.shift();
   }
+  if (parts.length && matchLang(parts[0])) parts.shift();
+
+  page = parts.join("/") || "index.html";
+  if (!/\.html?$/i.test(page)) {
+    page = (page.replace(/\/+$/, "") || "index") + ".html";
+  }
+
+  const base = repo ? `/${repo}` : "";
+
+
+  if (page.toLowerCase() === "gallery.html") {
+    return `${base}/gallery.html?lang=${use}`;
+  }
+
+  return use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
+}
 
   // wire selectors
   const hook = (id) => {

@@ -150,7 +150,7 @@ function updatePadraoFromActiveButtons() {
 
   const idsToSave = [];
   activeButtons.forEach(btn => {
-    const rgb = rgbFromChip(btn);          // <<< use this
+    const rgb = rgbFromChip(btn);
     if (rgb) padrao.push(rgb);
     idsToSave.push(btn.id);
   });
@@ -158,8 +158,7 @@ function updatePadraoFromActiveButtons() {
   localStorage.setItem('activeColors', JSON.stringify(idsToSave));
 
   if (originalImage) {
-    applyScale();
-    applyPreview();
+    reprocessWithCurrentPalette();
   }
 }
 
@@ -218,7 +217,24 @@ document.getElementById('clipboard').addEventListener('click', async function ()
   }
 });
 
+// Draw the *processed* image into the already-sized visible canvas,
+// without changing canvas width/height or reading layout.
+function repaintPreviewSameSize() {
+  const src = processedCanvas || canvas;
+  if (!src || !canvas) return;
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
+}
 
+function resetVisibleToScaled() {
+  if (!scaledCanvas) return;
+  canvas.width  = scaledCanvas.width;
+  canvas.height = scaledCanvas.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(scaledCanvas, 0, 0);
+}
 
 // Handle paste events to allow image pasting
 document.addEventListener('paste', function (event) {
@@ -520,6 +536,72 @@ _colorCounts = colorCounts;
 return colorCounts;
 }
 
+let _lastAppliedScale = 1;
+(function wrapApplyScale(){
+  const _orig = applyScale;
+  applyScale = function() {
+    _orig();
+    _lastAppliedScale = parseFloat(scaleRange.value) || 1;
+  };
+})();
+
+function reprocessWithCurrentPalette() {
+  if (!originalImage) return;
+
+  const targetScale = parseFloat(scaleRange.value) || 1;
+  const needRescale = (targetScale !== _lastAppliedScale);
+
+  if (needRescale) {
+    // Slow path: scale changed — normal/full pipeline keeps layout correct
+    applyScale();
+    applyPreview();
+    return;
+  }
+
+  // Fast path: only palette/visibility changed
+  const vp = document.getElementById('canvasViewport');
+
+  // 1) remember absolute scroll (cheap)
+  const keepSL = vp ? vp.scrollLeft : 0;
+  const keepST = vp ? vp.scrollTop  : 0;
+
+  // 2) if we don't have a base image, fall back to slow path once
+  if (!scaledCanvas) {
+    applyScale();
+    applyPreview();
+    return;
+  }
+
+  // 3) temporarily switch the visible canvas to base resolution
+  const prevW   = canvas.width;
+  const prevH   = canvas.height;
+  const prevCSSW = canvas.style.width;
+  const prevCSSH = canvas.style.height;
+
+  canvas.width  = scaledCanvas.width;
+  canvas.height = scaledCanvas.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(scaledCanvas, 0, 0);
+
+  // 4) re‑quantize at base resolution (this updates processedCanvas)
+  processarImagem();
+
+  // 5) restore visible canvas size (don’t recompute layout/center)
+  canvas.width  = prevW;
+  canvas.height = prevH;
+  canvas.style.width  = prevCSSW;
+  canvas.style.height = prevCSSH;
+
+  // 6) repaint processed image into the current visible size (no resize/center math)
+  repaintPreviewSameSize();
+
+  // 7) restore the same scroll offsets
+  if (vp) {
+    vp.scrollLeft = keepSL;
+    vp.scrollTop  = keepST;
+  }
+}
+
 // Image info display
 function showImageInfo(width, height) {
   if (width == null || height == null) return;
@@ -676,9 +758,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
       updateMasterLabel();
       saveState();
       updatePadraoFromActiveButtons();
-      if (window.originalImage) {
-        reprocessWithCurrentPalette();
-      }
     });
   });
 })({
@@ -737,9 +816,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
             updateMasterLabel();
             saveState();
             updatePadraoFromActiveButtons();
-            if (window.originalImage) {
-              reprocessWithCurrentPalette();
-            }
           }, 0);
         });
       });
@@ -1111,7 +1187,7 @@ scaleRange.addEventListener('change', () => {
   applyPreview();
 });
 
-// ---- SINGLE upload handler: fit-to-viewport + center on load ----
+// ---- Upload handler: fit-to-viewport + center on load ----
 upload.addEventListener('change', e => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -1132,6 +1208,7 @@ upload.addEventListener('change', e => {
     // controls + info
     scaleRange.value = 1.0;
     scaleValue.textContent = '1.00x';
+    _lastAppliedScale = parseFloat(scaleRange.value) || 1
     initDimensions?.();
     showImageInfo(currentImageWidth, currentImageHeight);
 
@@ -1302,10 +1379,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-
-
-
 
 // Current language getter
 function getCurrentLang() {
@@ -1582,7 +1655,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirect to gallery after a brief pause
         setTimeout(() => {
-          const target = lang === "en" ? "gallery.html" : `gallery.html?lang=${lang}`;
+          const lang = (typeof getCurrentLang === "function" ? getCurrentLang() : "en");
+
+          // compute repo base (e.g., "/color_converter_wplace" on GitHub Pages)
+          const parts = window.location.pathname.replace(/^\/+/, "").split("/");
+          const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
+          let repo = "";
+          if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
+            repo = `/${parts[0]}`;
+          }
+
+          // gallery lives at root, never under a locale folder
+          const base = repo;                       // "" or "/<repo>"
+          const target =
+            lang.toLowerCase() === "en"
+              ? `${base}/gallery.html`
+              : `${base}/gallery.html?lang=${lang}`;
+
           window.location.href = target;
         }, 700);
       } catch (err) {
