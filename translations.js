@@ -2,6 +2,7 @@
 (function () {
   const LS_KEY = "lang";
   const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
+  const IS_LOCAL = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
   const matchLang = (s) => {
   const n = norm(s);
   if (!n) return null;
@@ -220,7 +221,7 @@ function initLang() {
   const repoPrefix = `/${repo || "color_converter_wplace"}/`;
 
   // Redirect #1 — if URL is not under the repo folder, force it under /color_converter_wplace/
-  if (!location.pathname.startsWith(repoPrefix)) {
+  if (!IS_LOCAL && !location.pathname.startsWith(repoPrefix)) {
     const base = "/color_converter_wplace";
     const dest = (pg.toLowerCase() === "gallery.html")
       ? (use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`)

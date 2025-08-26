@@ -482,13 +482,30 @@ h2#title, h2 {
   overflow:auto;
 }
 
-/* Color list (right now kept narrow and responsive) */
+/* Color list */
 #color-list {
-  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));;
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
   border-radius: 18px;
   padding: 18px 12px;
   box-shadow: 0 2px 12px #0008;
+
+  /* Manual column count mode */
+  grid-template-columns: var(--color-list-template, repeat(2, minmax(0, 1fr)));
+  display: grid;
+  gap: 6px 12px;
+  align-items: start;
 }
+
+/* Dynamic column count mode: responsive up to 4 cols */
+#color-list.dynamic {
+  /* 
+    minmax( max( 20%, 250px ), 1fr )
+    - min: the larger [max(..)] of 20% or 250px
+    - max: flexible, share remaining space (1fr) 
+  */
+  grid-template-columns: repeat(auto-fit, minmax(max(20%, 250px), 1fr));
+}
+
 #color-list:empty { display: none; }
 
 

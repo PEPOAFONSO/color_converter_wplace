@@ -620,11 +620,51 @@ function showImageInfo(width, height) {
   }
 }
 
+// Read column choice (default 3)
+function getColorColumnCount() {
+  const defaultColumns = 3;
+  const maxColumns = 4;
+  const columnCount = document.getElementById('color-columns-manual-count');
+  const value = columnCount ? parseInt(columnCount.value, 10) : defaultColumns;
+  return Number.isFinite(value) && value > 0 ? Math.min(maxColumns, value) : defaultColumns;
+}
+
+// Read chosen mode: 'dynamic' or 'manual'
+function getColumnMode() {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
+}
+
+// Enable/Disable the select based on the current mode
+function syncColumnCountSelectState() {
+  const columnCount = document.getElementById('color-columns-manual-count');
+  if (!columnCount) return;
+  const mode = getColumnMode();
+  columnCount.disabled = (mode === 'dynamic');
+  columnCount.setAttribute('aria-disabled', String(columnCount.disabled));
+}
 
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
   const colorListDiv = document.getElementById('color-list');
   if (!colorListDiv) return;
+
+  // Persist for re-renders triggered by column controls
+  window._colorCounts = colorCounts;
+
+  // --- Column layout (dynamic/manual) ---
+  const mode = (typeof getColumnMode === 'function' && getColumnMode()) || 'manual';
+  const cols = (typeof getColorColumnCount === 'function' && getColorColumnCount()) || 3;
+
+  // Toggle dynamic class and manual template var
+  if (mode === 'dynamic') {
+    colorListDiv.classList.add('dynamic');
+    // ensure manual var doesn't interfere
+    colorListDiv.style.removeProperty('--color-list-template');
+  } else {
+    colorListDiv.classList.remove('dynamic');
+    colorListDiv.style.setProperty('--color-list-template', `repeat(${cols}, minmax(0, 1fr))`);
+  }
 
   // Keep palette order, show if count > 0 or hidden
   const rows = padrao.map(([r, g, b]) => {
@@ -637,9 +677,11 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 
   colorListDiv.innerHTML = '';
 
-  const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
+  const rowsSorted = order === 'original'
+    ? rows
+    : rows.toSorted((a, b) => b.count - a.count);
 
-  rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
+  rowsSorted.forEach(({ r, g, b, key, name, count, hidden }) => {
     const row = document.createElement('div');
     row.className = 'usage-item' + (hidden ? ' hidden' : '');
     row.style.display = 'flex';
@@ -656,18 +698,14 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 
     const label = document.createElement('span');
     if (hidden && count === 0) {
-      // Show eye icon instead of 0px
       label.textContent = `${name}: `;
       const eyeIcon = document.createElement('span');
       eyeIcon.className = 'usage-hide-icon';
       label.appendChild(eyeIcon);
     } else {
-      label.textContent = hidden
-        ? `${name}: ${count} px`
-        : `${name}: ${count} px`;
-      
+      label.textContent = `${name}: ${count} px`;
       // Differentiate Paid colors
-      const isPaid = paidColors.has(key);
+      const isPaid = (typeof paidColors !== 'undefined') && paidColors.has(key);
       if (isPaid) label.style.color = 'gold';
     }
 
@@ -1507,10 +1545,9 @@ function isDitheringOn() {
     btn.classList.toggle('active', next);
     localStorage.setItem(DITHER_KEY, String(next));
 
-if (originalImage) {
-    applyScale();
-    applyPreview();
-}
+  if (originalImage) {
+    reprocessWithCurrentPalette();
+  }
 
   });
 
@@ -1593,6 +1630,55 @@ async function saveImageToGallery(blob) {
     req.onerror = () => reject(req.error);
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const dynamic     = document.getElementById('color-columns-dynamic');
+  const manual      = document.getElementById('color-columns-manual');
+  const columnCount = document.getElementById('color-columns-manual-count');
+
+  const triggerRerender = () => {
+    syncColumnCountSelectState();
+    if (window._colorCounts) showColorUsage(window._colorCounts, getColorsListOrder());
+  };
+
+  // Restore saved prefs
+  const savedMode = localStorage.getItem("colorColumnMode");
+  if (savedMode === "dynamic" && dynamic) dynamic.checked = true;
+  else if (savedMode === "manual" && manual) manual.checked = true;
+
+  const savedCountRaw = localStorage.getItem("columnCount");
+  if (columnCount && savedCountRaw !== null) {
+    const parsed = parseInt(savedCountRaw, 10);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 4) {
+      columnCount.value = String(parsed);
+    }
+  }
+
+  // Initial sync + render
+  triggerRerender();
+
+  // Persist changes and re-render
+  dynamic?.addEventListener('change', () => {
+    localStorage.setItem("colorColumnMode", getColumnMode());
+    triggerRerender();
+  });
+  manual?.addEventListener('change', () => {
+    localStorage.setItem("colorColumnMode", getColumnMode());
+    triggerRerender();
+  });
+  columnCount?.addEventListener('change', () => {
+    localStorage.setItem("columnCount", getColorColumnCount());
+    triggerRerender();
+  });
+
+  // If you have sort radios, keep this so re-sorting re-renders
+  document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (window._colorCounts) showColorUsage(window._colorCounts, getColorsListOrder());
+    });
+  });
+});
+
 
 // ===============================
 // Add to Gallery
