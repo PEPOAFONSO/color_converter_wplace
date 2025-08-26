@@ -45,6 +45,10 @@
   return matchLang(cand);
 }
 
+function safePage(p) {
+  return /^(index|gallery)\.html$/i.test(p || "") ? p : "index.html";
+}
+
 function setCurrentLang(lang) {
   const use = matchLang(lang) || "en";
   localStorage.setItem(LS_KEY, use);
@@ -86,19 +90,19 @@ function computeRepoAndPage() {
   return { repo, page };
 }
 
+
 // Build the target URL for a given language while keeping the same page
 function targetForLang(lang) {
-  const use = (window.matchLang && window.matchLang(lang)) || "en";
+  const use = matchLang(lang) || "en";
   const { repo, page } = computeRepoAndPage();
   const base = repo ? `/${repo}` : "";
 
-  if ((page || "").toLowerCase() === "gallery.html") {
-    return `${base}/gallery.html?lang=${use}`;
-  }
+  const pg = safePage(page);
 
-  // Other pages: folderized home/locale pages
-  const n = (s => (s || "").toLowerCase().replace(/_/g, "-"))(use);
-  return n === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
+  if (pg.toLowerCase() === "gallery.html") {
+    return use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`;
+  }
+  return use === "en" ? `${base}/${pg}` : `${base}/${use}/${pg}`;
 }
 
 // Redirect to the correct folder page and persist language
@@ -212,13 +216,15 @@ function initLang() {
 
   const use = matchLang(desired) || "en";
   const { repo, page } = computeRepoAndPage();
+  const pg = safePage(page);
+  const repoPrefix = `/${repo || "color_converter_wplace"}/`;
 
-  // Redirect #1 — missing repo (e.g., /pt/index.html → add /color_converter_wplace)
-  if (!repo) {
+  // Redirect #1 — if URL is not under the repo folder, force it under /color_converter_wplace/
+  if (!location.pathname.startsWith(repoPrefix)) {
     const base = "/color_converter_wplace";
-    const dest = (page || "").toLowerCase() === "gallery.html"
+    const dest = (pg.toLowerCase() === "gallery.html")
       ? (use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`)
-      : (use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`);
+      : (use === "en" ? `${base}/${pg}` : `${base}/${use}/${pg}`);
     window.location.replace(dest);
     return;
   }
@@ -226,10 +232,12 @@ function initLang() {
   // Redirect #1.5 — URL begins with a lang but points to an unknown file (e.g., /pt/foo.html)
   {
     const parts = location.pathname.replace(/^\/+/, "").split("/");
-    const firstIsLang = !!matchLang(parts[0]);
-    const second = (parts[1] || "").toLowerCase();
-    const isKnownRootFile = second === "" || second === "index.html" || second === "gallery.html";
-    if (firstIsLang && !isKnownRootFile) {
+    const firstIsLang = !!matchLang(parts[0]) || (!!parts[1] && matchLang(parts[1])); // handles /repo/pt/...
+    // second segment if path starts with lang (no repo) OR third if path is /repo/lang/...
+    const idx = (parts[0] && matchLang(parts[0])) ? 1 : ((parts[1] && matchLang(parts[1])) ? 2 : -1);
+    const file = idx >= 0 ? (parts[idx] || "").toLowerCase() : "";
+    const isKnown = file === "" || file === "index.html" || file === "gallery.html";
+    if (firstIsLang && !isKnown) {
       window.location.replace(targetForLang(use));
       return;
     }
@@ -237,16 +245,9 @@ function initLang() {
 
   // Redirect #2 — repo present but folder lang doesn't match chosen lang (home page only)
   const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
-  const pathLang = (function () {
-    const p = location.pathname.replace(/^\/+/, "").split("/");
-    let cand = p[0] || "";
-    if (!matchLang(cand) && p[1] && !/\.html?$/i.test(p[0] || "")) cand = p[1];
-    return matchLang(cand) || "en";
-  })();
-
-  if (page.toLowerCase() === "index.html" && norm(pathLang) !== norm(use)) {
+  const pathLang = getPathLang() || "en";
+  if (pg.toLowerCase() === "index.html" && norm(pathLang) !== norm(use)) {
     const dest = targetForLang(use);
-    // avoid loop if we're already at the correct URL
     if (norm(new URL(dest, location.origin).pathname) !== norm(location.pathname)) {
       window.location.replace(dest);
       return;
@@ -271,7 +272,6 @@ function initLang() {
   hook("lang-select");
   hook("lang-select-menu");
 
-  // Keep gallery UI in sync if present
   window.renderGallery?.();
   window.refreshSelectionBar?.();
 }
