@@ -2,19 +2,22 @@
 (function () {
   const LS_KEY = "lang";
   const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
+
+  // Normalize & match (with region fallback: pt-PT -> pt)
   const matchLang = (s) => {
-  const n = norm(s);
-  if (!n) return null;
-  // exact match
-  const exact = KNOWN.find(k => norm(k) === n);
-  if (exact) return exact;
-  // base language fallback
-  const base = n.split("-")[0];
-  return KNOWN.find(k => norm(k) === base) || null;
-};
+    const norm = x => (x || "").toLowerCase().replace(/_/g, "-");
+    const find = v => KNOWN.find(k => norm(k) === norm(v)) || null;
+    const n = norm(s);
+    if (!n) return null;
+    return find(n) || find(n.split("-")[0]);
+  };
 
-
-  const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
+  function getBrowserLang() {
+    const cand = (navigator.languages && navigator.languages[0]) ||
+                 navigator.language ||
+                 navigator.userLanguage;
+    return matchLang(cand);
+  }
 
   function getUrlLang() {
     const v = new URLSearchParams(location.search).get("lang");
@@ -25,93 +28,90 @@
     return matchLang(first);
   }
 
+  // Current language helpers (now defined!)
   function getCurrentLang() {
     const sel = document.getElementById("lang-select");
     return (sel && sel.value)
         || localStorage.getItem(LS_KEY)
-        || getBrowserLang()
         || (document.documentElement.getAttribute("lang") || "en");
   }
 
-  function getBrowserLang() {
-  const cand =
-    (navigator.languages && navigator.languages[0]) ||
-    navigator.language ||
-    navigator.userLanguage;
-  return matchLang(cand);
-}
+  function setCurrentLang(lang) {
+    const use = matchLang(lang) || "en";
+    localStorage.setItem(LS_KEY, use);
+    document.documentElement.setAttribute("lang", use);
 
-function setCurrentLang(lang) {
-  const use = matchLang(lang) || "en";
-  localStorage.setItem(LS_KEY, use);
-  document.documentElement.setAttribute("lang", use);
+    const sel1 = document.getElementById("lang-select");
+    if (sel1) sel1.value = use;
+    const sel2 = document.getElementById("lang-select-menu");
+    if (sel2) sel2.value = use;
 
-  const sel = document.getElementById("lang-select");
-  if (sel) sel.value = use;
-  const sel2 = document.getElementById("lang-select-menu");
-  if (sel2) sel2.value = use;
+    // Keep URL tidy:
+    // - gallery.html keeps ?lang
+    // - folder pages don't use ?lang
+    const url = new URL(window.location.href);
+    const isGallery = /\/gallery\.html$/i.test(url.pathname);
+    if (isGallery) {
+      url.searchParams.set("lang", use);
+    } else {
+      url.searchParams.delete("lang");
+    }
+    history.replaceState(null, "", url);
 
-  // Update the current page URL with ?lang=...
-  const url = new URL(window.location.href);
-  url.searchParams.set("lang", use);
-  history.replaceState(null, "", url);
-
-  decorateLinks(); // keep all <a data-keep-lang> links in sync
-}
-
-// Compute "repo" (if any) and the current page (index.html / gallery.html)
-function computeRepoAndPage() {
-  const raw = location.pathname.replace(/^\/+/, "").split("/");
-  const isHtml = s => /\.html?$/i.test(s || "");
-  const isLang = s => !!matchLang(s);  // <-- use local matcher (NOT window.matchLang)
-
-  let i = 0;
-  let repo = "";
-
-  if (!raw[i]) {
-    repo = "color_converter_wplace";
-  } else if (isLang(raw[i]) || isHtml(raw[i])) {
-    repo = "color_converter_wplace";
-  } else {
-    repo = raw[i++];
-  }
-  if (raw[i] && isLang(raw[i])) i++;
-
-  let page = raw.slice(i).join("/") || "index.html";
-  if (!isHtml(page)) page = (page.replace(/\/+$/, "") || "index") + ".html";
-  return { repo, page };
-}
-
-// Build the target URL for a given language while keeping the same page
-function targetForLang(lang) {
-  const use = (window.matchLang && window.matchLang(lang)) || "en";
-  const { repo, page } = computeRepoAndPage();
-  const base = repo ? `/${repo}` : "";
-
-  if ((page || "").toLowerCase() === "gallery.html") {
-    return `${base}/gallery.html?lang=${use}`;
+    decorateLinks(); // keep all <a data-keep-lang> links in sync
   }
 
-  // Other pages: folderized home/locale pages
-  const n = (s => (s || "").toLowerCase().replace(/_/g, "-"))(use);
-  return n === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
-}
+  // Compute "repo" (if any) and the current page (index.html / gallery.html)
+  function computeRepoAndPage() {
+    const raw = location.pathname.replace(/^\/+/, "").split("/");
+    const isHtml = s => /\.html?$/i.test(s || "");
+    const isLang = s => !!matchLang(s);
 
-// Redirect to the correct folder page and persist language
-function navigateToLang(lang) {
-  const use = (window.matchLang && window.matchLang(lang)) || "en";
-  localStorage.setItem("lang", use);
-  document.documentElement.setAttribute("lang", use);
-  const dest = targetForLang(use);
-  window.location.href = dest; // full navigation to folder page
-}
+    let i = 0;
+    let repo = "";
 
+    if (!raw[i]) {
+      repo = "color_converter_wplace";
+    } else if (isLang(raw[i]) || isHtml(raw[i])) {
+      repo = "color_converter_wplace";
+    } else {
+      repo = raw[i++];
+    }
+    if (raw[i] && isLang(raw[i])) i++;
+
+    let page = raw.slice(i).join("/") || "index.html";
+    if (!isHtml(page)) page = (page.replace(/\/+$/, "") || "index") + ".html";
+    return { repo, page };
+  }
+
+  // Build the target URL for a given language while keeping the same page
+  function targetForLang(lang) {
+    const use = matchLang(lang) || "en";
+    const { repo, page } = computeRepoAndPage();
+    const base = repo ? `/${repo}` : "";
+
+    if ((page || "").toLowerCase() === "gallery.html") {
+      return use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`;
+    }
+
+    // Other pages: folderized home/locale pages
+    return use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
+  }
+
+  // Redirect to the correct folder page and persist language
+  function navigateToLang(lang) {
+    const use = matchLang(lang) || "en";
+    localStorage.setItem(LS_KEY, use);
+    document.documentElement.setAttribute("lang", use);
+    const dest = targetForLang(use);
+    window.location.href = dest; // full navigation to folder page
+  }
 
   // Apply translations to data-i18n + attribute variants
   function applyTranslations(root = document) {
     const lang = getCurrentLang();
     const dict = (window.translations && window.translations[lang]) || {};
-    const tr = (key, fallback) => (dict[key] ?? fallback ?? key);
+    const tr = (key, fb) => (dict[key] ?? fb ?? key);
 
     root.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.getAttribute("data-i18n");
@@ -135,124 +135,113 @@ function navigateToLang(lang) {
     });
   }
 
-  // Keep internal links carrying the language (?lang=xx)
-function decorateLinks(root = document) {
-  // current language
-  const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
+  // Keep internal links carrying the language (only gallery uses ?lang)
+  function decorateLinks(root = document) {
+    const lang = getCurrentLang() || "en";
+    const KN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
 
-  // known languages (normalized)
-  const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
+    // detect optional repo base (e.g., /color_converter_wplace/…)
+    const parts = location.pathname.replace(/^\/+/, "").split("/");
+    let repoBase = "";
+    if (parts.length && !KN.has((parts[0]||"").toLowerCase()) && !/\.html?$/i.test(parts[0])) {
+      repoBase = `/${parts[0]}`;
+    }
 
-  // detect optional repo base (e.g., /myrepo/...)
-  const parts = location.pathname.replace(/^\/+/, "").split("/");
-  let repoBase = "";
-  if (parts.length && !KNOWN.has(parts[0].toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
-    repoBase = `/${parts[0]}`;
-  }
+    root.querySelectorAll('a[data-keep-lang]').forEach(a => {
+      const raw = a.getAttribute("href");
+      if (!raw) return;
 
-root.querySelectorAll('a[data-keep-lang]').forEach(a => {
-  const raw = a.getAttribute("href");
-  if (!raw) return;
+      let url;
+      try { url = new URL(raw, location.origin); } catch { return; }
 
-  let url;
-  try { 
-    // build relative to the site root, never to the current page
-    url = new URL(raw, location.origin);
-  } catch { 
-    return; 
-  }
+      const segs = url.pathname.replace(/^\/+/, "").split("/");
+      if (segs.length && KN.has(segs[0].toLowerCase())) segs.shift();
 
-  const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
-  const segs = url.pathname.replace(/^\/+/, "").split("/");
-  if (segs.length && KNOWN.has(segs[0].toLowerCase())) segs.shift();
+      const filename = segs[segs.length - 1] || "";
 
-  const parts = location.pathname.replace(/^\/+/, "").split("/");
-  let repoBase = "";
-  if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
-    repoBase = `/${parts[0]}`;
-  }
+      if (/^gallery\.html$/i.test(filename)) {
+        url.pathname = `${repoBase}/gallery.html`;
+        url.search = (lang.toLowerCase() === "en") ? "" : `?lang=${lang}`;
+      } else if (!filename || /^index\.html$/i.test(filename)) {
+        url.pathname = (lang.toLowerCase() === "en")
+          ? `${repoBase}/index.html`
+          : `${repoBase}/${lang}/index.html`;
+        url.search = "";
+      } else {
+        url.pathname = `${repoBase}/${segs.join("/")}`;
+        url.search = (lang.toLowerCase() === "en") ? "" : `?lang=${lang}`;
+      }
 
-  const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
-  const filename = segs[segs.length - 1] || "";
-
-  if (/^gallery\.html$/i.test(filename)) {
-    url.pathname = `${repoBase}/gallery.html`;
-    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
-  } else if (!filename || /^index\.html$/i.test(filename)) {
-    url.pathname = lang.toLowerCase()==="en"
-      ? `${repoBase}/index.html`
-      : `${repoBase}/${lang}/index.html`;
-    url.search = "";
-  } else {
-    url.pathname = `${repoBase}/${segs.join("/")}`;
-    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
-  }
-
-  // safety: no ".html/" endings
-  url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
-
-  // write an ABSOLUTE url (keeps origin so new-tab works)
-  a.setAttribute("href", url.toString());
-});
-}
-
-
-function initLang() {
-  // Priority: ?lang → folder → saved → <html lang> → 'en'
-  const desired =
-    getUrlLang() ||
-    getPathLang() ||
-    localStorage.getItem(LS_KEY) ||
-    getBrowserLang() ||
-    "en";
-
-  // If this page has no repo segment (e.g. /pt/index.html), redirect to the correct one
-  const { repo, page } = computeRepoAndPage();
-  if (!repo) {
-    const use  = matchLang(desired) || "en";
-    const base = "/color_converter_wplace";
-    const dest = (page || "").toLowerCase() === "gallery.html"
-      ? `${base}/gallery.html${use === "en" ? "" : `?lang=${use}`}`
-      : (use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`);
-    window.location.replace(dest);
-    return; // stop here; we'll re-init on the correct URL
-  }
-
-  setCurrentLang(desired);
-  applyTranslations(document);
-
-  // wire selectors (use the GLOBAL targetForLang)
-  const hook = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = desired;
-    el.addEventListener("change", () => {
-      const chosen = el.value;
-      localStorage.setItem("lang", chosen);
-      window.location.href = targetForLang(chosen);
+      // safety: no ".html/" endings
+      url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
+      a.setAttribute("href", url.toString());
     });
-  };
-  hook("lang-select");
-  hook("lang-select-menu");
+  }
 
-  // If gallery page exposes these, keep dynamic text consistent
-  window.renderGallery?.();
-  window.refreshSelectionBar?.();
-}
+  function initLang() {
+    // Priority: ?lang → folder → saved → browser → <html lang> → 'en'
+    const desired =
+      getUrlLang() ||
+      getPathLang() ||
+      localStorage.getItem(LS_KEY) ||
+      getBrowserLang() ||
+      document.documentElement.getAttribute("lang") ||
+      "en";
 
-// expose
-window.getCurrentLang = getCurrentLang;
-window.setCurrentLang = setCurrentLang;
-window.applyTranslations = applyTranslations;
-window.initLang = initLang;
-window.decorateLinks = decorateLinks;
-window.matchLang = matchLang;
-window.computeRepoAndPage = computeRepoAndPage;
-// NOTE: targetForLang is defined globally elsewhere; no inner duplicate here.
+    const use = matchLang(desired) || "en";
+    const { repo, page } = computeRepoAndPage();
 
-// boot
-if (document.readyState !== "loading") initLang();
-else document.addEventListener("DOMContentLoaded", initLang);
+    // Redirect #1: add repo when missing (e.g., /pt/index.html)
+    if (!repo) {
+      const base = "/color_converter_wplace";
+      const dest = (page || "").toLowerCase() === "gallery.html"
+        ? (use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`)
+        : (use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`);
+      window.location.replace(dest);
+      return;
+    }
+
+    // Redirect #2: repo present but folder doesn't match chosen language
+    const pathLang = getPathLang() || "en";
+    if (page.toLowerCase() === "index.html" && pathLang !== use) {
+      window.location.replace(targetForLang(use));
+      return;
+    }
+
+    // Otherwise, stay and render translations
+    setCurrentLang(use);
+    applyTranslations(document);
+
+    const hook = (id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = use;
+      el.addEventListener("change", () => {
+        const chosen = el.value;
+        localStorage.setItem(LS_KEY, chosen);
+        window.location.href = targetForLang(chosen);
+      });
+    };
+    hook("lang-select");
+    hook("lang-select-menu");
+
+    window.renderGallery?.();
+    window.refreshSelectionBar?.();
+  }
+
+  // expose
+  window.getCurrentLang = getCurrentLang;
+  window.setCurrentLang = setCurrentLang;
+  window.applyTranslations = applyTranslations;
+  window.initLang = initLang;
+  window.decorateLinks = decorateLinks;
+  window.matchLang = matchLang;
+  window.computeRepoAndPage = computeRepoAndPage;
+  window.targetForLang = targetForLang;
+
+  // boot
+  if (document.readyState !== "loading") initLang();
+  else document.addEventListener("DOMContentLoaded", initLang);
 })();
 
 window.translations = {
@@ -300,6 +289,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collection",
+    columns: "Columns",
+    columnsDynamic: "Dynamic",
+    columnsManual: "Manual",
   },
   pt: {
     galleryPageTitle: "A Minha Galeria – Wplace Color Converter",
@@ -345,6 +337,9 @@ window.translations = {
     viewerNamePlaceholder: "Nome…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Coleção",
+    columns: "Colunas",
+    columnsDynamic: "Dinâmico",
+    columnsManual: "Manual",
   },
   de: {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -390,6 +385,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   "de-CH": {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -435,6 +433,9 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    columns: "Spalten",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Manuell",
   },
   es: {
     galleryPageTitle: "Mi Galería – Wplace Color Converter",
@@ -480,6 +481,9 @@ window.translations = {
     viewerNamePlaceholder: "Nombre…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Colección",
+    columns: "Columnas",
+    columnsDynamic: "Dinámico",
+    columnsManual: "Manual",
   },
   fr: {
     galleryPageTitle: "Ma Galerie – Wplace Color Converter",
@@ -525,6 +529,9 @@ window.translations = {
     viewerNamePlaceholder: "Nom…",
     viewerTagsPlaceholder: "Étiquettes…",
     viewerCollectionPlaceholder: "Collection",
+    columns: "Colonnes",
+    columnsDynamic: "Dynamique",
+    columnsManual: "Manuel",
   },
   uk: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -570,6 +577,9 @@ window.translations = {
     viewerNamePlaceholder: "Ім’я…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Колекція",
+    columns: "Стовпці",
+    columnsDynamic: "Динамічно",
+    columnsManual: "Вручну",
   },
   vi: {
     galleryPageTitle: "Thư viện của tôi – Wplace Color Converter",
@@ -615,6 +625,9 @@ window.translations = {
     viewerNamePlaceholder: "Tên…",
     viewerTagsPlaceholder: "Thẻ…",
     viewerCollectionPlaceholder: "Bộ sưu tập",
+    columns: "Cột",
+    columnsDynamic: "Tự động",
+    columnsManual: "Thủ công",
   },
   pl: {
     galleryPageTitle: "Moja Galeria – Wplace Color Converter",
@@ -660,6 +673,9 @@ window.translations = {
     viewerNamePlaceholder: "Nazwa…",
     viewerTagsPlaceholder: "Tagi…",
     viewerCollectionPlaceholder: "Kolekcja",
+    columns: "Kolumny",
+    columnsDynamic: "Dynamiczny",
+    columnsManual: "Ręczny",
   },
   ja: {
     galleryPageTitle: "マイギャラリー – Wplace Color Converter",
@@ -705,6 +721,9 @@ window.translations = {
     viewerNamePlaceholder: "名前…",
     viewerTagsPlaceholder: "タグ…",
     viewerCollectionPlaceholder: "コレクション",
+    columns: "列",
+    columnsDynamic: "動的",
+    columnsManual: "手動",
   },
   nl: {
     galleryPageTitle: "Mijn Galerij – Wplace Color Converter",
@@ -750,6 +769,9 @@ window.translations = {
     viewerNamePlaceholder: "Naam…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collectie",
+    columns: "Kolommen",
+    columnsDynamic: "Dynamisch",
+    columnsManual: "Handmatig",
   },
   ru: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -795,6 +817,9 @@ window.translations = {
     viewerNamePlaceholder: "Имя…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Коллекция",
+    columns: "Столбцы",
+    columnsDynamic: "Динамический",
+    columnsManual: "Вручную",
   },
   tr: {
     galleryPageTitle: "Galerim – Wplace Color Converter",
@@ -840,5 +865,8 @@ window.translations = {
     viewerNamePlaceholder: "Ad…",
     viewerTagsPlaceholder: "Etiketler…",
     viewerCollectionPlaceholder: "Koleksiyon",
+    columns: "Sütunlar",
+    columnsDynamic: "Dinamik",
+    columnsManual: "Manuel",
   }
 };
