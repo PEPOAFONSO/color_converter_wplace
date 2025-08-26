@@ -55,37 +55,49 @@ function setCurrentLang(lang) {
   localStorage.setItem(LS_KEY, use);
   document.documentElement.setAttribute("lang", use);
 
-  const sel = document.getElementById("lang-select");
-  if (sel) sel.value = use;
+  const sel1 = document.getElementById("lang-select");
+  if (sel1) sel1.value = use;
   const sel2 = document.getElementById("lang-select-menu");
   if (sel2) sel2.value = use;
 
-  // Update the current page URL with ?lang=...
-  const url = new URL(window.location.href);
-  url.searchParams.set("lang", use);
-  history.replaceState(null, "", url);
+  // Build the canonical URL for the *current page* in the chosen language
+  // (index pages get .../index.html; gallery keeps ?lang=xx)
+  const dest = new URL(targetForLang(use), location.origin);
 
-  decorateLinks(); // keep all <a data-keep-lang> links in sync
+  // Update address bar without reloading
+  history.replaceState(null, "", dest);
+
+  // Keep internal links in sync
+  decorateLinks();
 }
+
 
 // Compute "repo" (if any) and the current page (index.html / gallery.html)
 function computeRepoAndPage() {
   const raw = location.pathname.replace(/^\/+/, "").split("/");
   const isHtml = s => /\.html?$/i.test(s || "");
-  const isLang = s => !!matchLang(s);  // <-- use local matcher (NOT window.matchLang)
+  const isLang = s => !!matchLang(s);
 
   let i = 0;
   let repo = "";
 
-  if (!raw[i]) {
-    repo = "color_converter_wplace";
-  } else if (isLang(raw[i]) || isHtml(raw[i])) {
-    repo = "color_converter_wplace";
+  if (IS_LOCAL) {
+    // In local dev we don't enforce repo; take folder as root
+    if (raw[i] && !isLang(raw[i]) && !isHtml(raw[i])) {
+      repo = raw[i++]; // your folder (color_converter_wplace)
+    }
   } else {
-    repo = raw[i++];
+    // GitHub Pages: enforce repo
+    if (!raw[i]) {
+      repo = "color_converter_wplace";
+    } else if (isLang(raw[i]) || isHtml(raw[i])) {
+      repo = "color_converter_wplace";
+    } else {
+      repo = raw[i++];
+    }
   }
-  if (raw[i] && isLang(raw[i])) i++;
 
+  if (raw[i] && isLang(raw[i])) i++;
   let page = raw.slice(i).join("/") || "index.html";
   if (!isHtml(page)) page = (page.replace(/\/+$/, "") || "index") + ".html";
   return { repo, page };
@@ -96,7 +108,7 @@ function computeRepoAndPage() {
 function targetForLang(lang) {
   const use = matchLang(lang) || "en";
   const { repo, page } = computeRepoAndPage();
-  const base = repo ? `/${repo}` : "";
+  const base = (!IS_LOCAL && repo) ? `/${repo}` : (IS_LOCAL ? "" : "");
 
   const pg = safePage(page);
 
