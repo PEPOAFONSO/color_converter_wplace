@@ -21,8 +21,12 @@
     return matchLang(v);
   }
   function getPathLang() {
-    const first = location.pathname.replace(/^\/+/, "").split("/")[0];
-    return matchLang(first);
+    const parts = location.pathname.replace(/^\/+/, "").split("/");
+    let cand = parts[0] || "";
+    if (!matchLang(cand) && parts[1] && !/\.html?$/i.test(parts[0])) {
+      cand = parts[1];
+    }
+    return matchLang(cand);
   }
 
   function getCurrentLang() {
@@ -198,7 +202,7 @@ root.querySelectorAll('a[data-keep-lang]').forEach(a => {
 
 
 function initLang() {
-  // Priority: ?lang → folder → saved → <html lang> → 'en'
+  // Priority: ?lang → folder → saved → browser → 'en'
   const desired =
     getUrlLang() ||
     getPathLang() ||
@@ -206,36 +210,68 @@ function initLang() {
     getBrowserLang() ||
     "en";
 
-  // If this page has no repo segment (e.g. /pt/index.html), redirect to the correct one
+  const use = matchLang(desired) || "en";
   const { repo, page } = computeRepoAndPage();
+
+  // Redirect #1 — missing repo (e.g., /pt/index.html → add /color_converter_wplace)
   if (!repo) {
-    const use  = matchLang(desired) || "en";
     const base = "/color_converter_wplace";
     const dest = (page || "").toLowerCase() === "gallery.html"
-      ? `${base}/gallery.html${use === "en" ? "" : `?lang=${use}`}`
+      ? (use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`)
       : (use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`);
     window.location.replace(dest);
-    return; // stop here; we'll re-init on the correct URL
+    return;
   }
 
-  setCurrentLang(desired);
+  // Redirect #1.5 — URL begins with a lang but points to an unknown file (e.g., /pt/foo.html)
+  {
+    const parts = location.pathname.replace(/^\/+/, "").split("/");
+    const firstIsLang = !!matchLang(parts[0]);
+    const second = (parts[1] || "").toLowerCase();
+    const isKnownRootFile = second === "" || second === "index.html" || second === "gallery.html";
+    if (firstIsLang && !isKnownRootFile) {
+      window.location.replace(targetForLang(use));
+      return;
+    }
+  }
+
+  // Redirect #2 — repo present but folder lang doesn't match chosen lang (home page only)
+  const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
+  const pathLang = (function () {
+    const p = location.pathname.replace(/^\/+/, "").split("/");
+    let cand = p[0] || "";
+    if (!matchLang(cand) && p[1] && !/\.html?$/i.test(p[0] || "")) cand = p[1];
+    return matchLang(cand) || "en";
+  })();
+
+  if (page.toLowerCase() === "index.html" && norm(pathLang) !== norm(use)) {
+    const dest = targetForLang(use);
+    // avoid loop if we're already at the correct URL
+    if (norm(new URL(dest, location.origin).pathname) !== norm(location.pathname)) {
+      window.location.replace(dest);
+      return;
+    }
+  }
+
+  // Apply and render
+  setCurrentLang(use);
   applyTranslations(document);
 
-  // wire selectors (use the GLOBAL targetForLang)
+  // Wire selectors
   const hook = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.value = desired;
+    el.value = use;
     el.addEventListener("change", () => {
       const chosen = el.value;
-      localStorage.setItem("lang", chosen);
+      localStorage.setItem(LS_KEY, chosen);
       window.location.href = targetForLang(chosen);
     });
   };
   hook("lang-select");
   hook("lang-select-menu");
 
-  // If gallery page exposes these, keep dynamic text consistent
+  // Keep gallery UI in sync if present
   window.renderGallery?.();
   window.refreshSelectionBar?.();
 }
