@@ -620,30 +620,6 @@ function showImageInfo(width, height) {
   }
 }
 
-// Read column choice (default 3)
-function getColorColumnCount() {
-  const defaultColumns = 3;
-  const maxColumns = 4;
-  const columnCount = document.getElementById('color-columns-manual-count');
-  const value = columnCount ? parseInt(columnCount.value, 10) : defaultColumns;
-  return Number.isFinite(value) && value > 0 ? Math.min(maxColumns, value) : defaultColumns;
-}
-
-// Read chosen mode: 'dynamic' or 'manual'
-function getColumnMode() {
-  const dynamic = document.getElementById('color-columns-dynamic');
-  return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
-}
-
-// Enable/Disable the select based on the current mode
-function syncColumnCountSelectState() {
-  const columnCount = document.getElementById('color-columns-manual-count');
-  if (!columnCount) return;
-  const mode = getColumnMode();
-  columnCount.disabled = (mode === 'dynamic');
-  // update aria attribute for accessibility
-  columnCount.setAttribute('aria-disabled', String(columnCount.disabled));
-}
 
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
@@ -660,17 +636,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   }).filter(item => item.count > 0 || item.hidden);
 
   colorListDiv.innerHTML = '';
-
-  // Dynamic or Manual columns
-  const colorColumnMode = getColumnMode();
-  const colorColumnCount = getColorColumnCount();
-
-  if (colorColumnMode === 'dynamic') {
-    colorListDiv.classList.add('dynamic');
-  } else {
-    colorListDiv.classList.remove('dynamic');
-    colorListDiv.style.setProperty('--color-list-template', `repeat(${colorColumnCount}, minmax(0, 1fr))`);
-  }
 
   const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
 
@@ -712,71 +677,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
   });
 }
 
-// Re-render when user changes columns, mode or sort order
-document.addEventListener('DOMContentLoaded', () => {
-  const dynamic = document.getElementById('color-columns-dynamic');
-  const manual = document.getElementById('color-columns-manual');
-  const columnCount = document.getElementById('color-columns-manual-count');
-
-  const triggerRerender = () => {
-    syncColumnCountSelectState();
-    if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
-  };
-
-  // Initialize from saved preferences (if any)
-  const savedMode = localStorage.getItem("colorColumnMode");
-  if (savedMode === "dynamic" && dynamic) {
-    dynamic.checked = true;
-  } else if (savedMode === "manual" && manual) {
-    manual.checked = true;
-  }
-
-  const savedCountRaw = localStorage.getItem("columnCount");
-  if (columnCount && savedCountRaw !== null) {
-    const parsed = parseInt(savedCountRaw, 10);
-    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 4) {
-      columnCount.value = String(parsed);
-    }
-  }
-
-  // Ensure select enabled/disabled matches mode right away
-  syncColumnCountSelectState();
-
-  // Persist changes and re-render
-  if (dynamic) {
-    dynamic.addEventListener('change', () => {
-      const colorColumnMode = getColumnMode();
-      localStorage.setItem("colorColumnMode", colorColumnMode);
-      triggerRerender();
-    });
-  }
-
-  if (manual) {
-    manual.addEventListener('change', () => {
-      const colorColumnMode = getColumnMode();
-      localStorage.setItem("colorColumnMode", colorColumnMode);
-      triggerRerender();
-    });
-  }
-
-  if (columnCount) {
-    columnCount.addEventListener('change', () => {
-      const newCount = getColorColumnCount();
-      localStorage.setItem("columnCount", newCount);
-      triggerRerender();
-    });
-  }
-
-  // also re-run when sort radio changes (existing)
-  document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
-    r.addEventListener('change', () => {
-      if (_colorCounts) showColorUsage(_colorCounts, getColorsListOrder());
-    });
-  });
-
-  // final initial render using saved values (if any)
-  triggerRerender();
-});
 
 // --- Script for Select All buttons (translation-free, label via data-attrs) ---
 
@@ -1380,7 +1280,6 @@ window.addEventListener('beforeunload', () => {
   zoomRange.value  = 1.0;
   zoomValue.textContent  = '1.00x';
 });
-
 
 // Language selector change event
 document.addEventListener("DOMContentLoaded", () => {

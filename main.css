@@ -96,7 +96,7 @@ main {
 .nav-burger span{display:block; height:2px; background:var(--text); margin:6px 8px}
 
 /* Language Selector */
-select {
+#lang-select {
   background: #222;
   color: #ffffff;
   font-weight: 600;
@@ -113,19 +113,9 @@ select {
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 10px 7px;
-}
-
-select[disabled] {
-  opacity: 0.5;
-}
-
-#lang-select{
-  padding: 8px 12px;
   min-width: 150px;
 }
-
-select:hover:not([disabled]),
-select:focus:not([disabled]) {
+#lang-select:hover, #lang-select:focus {
   background: #1a1a1a;
   border-color: var(--brand);
   border: 2px solid var(--brand) !important;
@@ -492,38 +482,13 @@ h2#title, h2 {
   overflow:auto;
 }
 
-/* columns selector */
-.columns-selector {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Color list */
+/* Color list (right now kept narrow and responsive) */
 #color-list {
-  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));;
   border-radius: 18px;
   padding: 18px 12px;
   box-shadow: 0 2px 12px #0008;
-
-  /* Manual column count mode */
-  grid-template-columns: var(--color-list-template, repeat(2, minmax(0, 1fr)));
-  display: grid;
-  gap: 6px 12px;
-  align-items: start;
 }
-
-/* Dynamic column count mode: responsive up to 4 cols */
-#color-list.dynamic {
-  /* 
-    minmax( max( 20%, 250px ), 1fr )
-    - min: the larger [max(..)] of 20% or 250px
-    - max: flexible, share remaining space (1fr) 
-  */
-  grid-template-columns: repeat(auto-fit, minmax(max(20%, 250px), 1fr));
-}
-
 #color-list:empty { display: none; }
 
 
