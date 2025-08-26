@@ -528,7 +528,7 @@
     closeViewer();
     allImagesCache = await getAllImages();
     await renderGallery();
-    refreshSelectionBar();                  // << update bar
+    refreshSelectionBar();
     showToast(t("deleted", "Deleted"), "success");
   }
 
@@ -593,7 +593,7 @@
       bindUI();
       await renderGallery();
       await updateStorageMeter();
-      refreshSelectionBar(); // << ensure bar is hidden initially
+      refreshSelectionBar();
     } catch (e) {
       console.error(e);
     }
