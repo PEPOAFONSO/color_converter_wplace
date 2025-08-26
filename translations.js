@@ -2,7 +2,17 @@
 (function () {
   const LS_KEY = "lang";
   const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
-  const matchLang = s => KNOWN.find(k => norm(k) === norm(s)) || null;
+  const matchLang = (s) => {
+  const n = norm(s);
+  if (!n) return null;
+  // exact match
+  const exact = KNOWN.find(k => norm(k) === n);
+  if (exact) return exact;
+  // base language fallback
+  const base = n.split("-")[0];
+  return KNOWN.find(k => norm(k) === base) || null;
+};
+
 
   const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
 
@@ -19,8 +29,17 @@
     const sel = document.getElementById("lang-select");
     return (sel && sel.value)
         || localStorage.getItem(LS_KEY)
+        || getBrowserLang()
         || (document.documentElement.getAttribute("lang") || "en");
   }
+
+  function getBrowserLang() {
+  const cand =
+    (navigator.languages && navigator.languages[0]) ||
+    navigator.language ||
+    navigator.userLanguage;
+  return matchLang(cand);
+}
 
 function setCurrentLang(lang) {
   const use = matchLang(lang) || "en";
@@ -184,7 +203,7 @@ function initLang() {
     getUrlLang() ||
     getPathLang() ||
     localStorage.getItem(LS_KEY) ||
-    document.documentElement.getAttribute("lang") ||
+    getBrowserLang() ||
     "en";
 
   // If this page has no repo segment (e.g. /pt/index.html), redirect to the correct one

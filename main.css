@@ -534,6 +534,16 @@ h2#title, h2 {
   aspect-ratio:auto !important;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.actions .btn {
+  flex: 0 0 auto;
+  text-align: center;
+}
 
 /* layout helpers */
 .row { display:flex; gap:10px; justify-content:center; align-items:center; }
