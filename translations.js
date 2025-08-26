@@ -2,9 +2,9 @@
 (function () {
   const LS_KEY = "lang";
   const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
+  const matchLang = s => KNOWN.find(k => norm(k) === norm(s)) || null;
 
   const norm = s => (s || "").toLowerCase().replace(/_/g, "-");
-  const matchLang = s => KNOWN.find(k => norm(k) === norm(s)) || null;
 
   function getUrlLang() {
     const v = new URLSearchParams(location.search).get("lang");
@@ -44,35 +44,24 @@ function setCurrentLang(lang) {
 function computeRepoAndPage() {
   const raw = location.pathname.replace(/^\/+/, "").split("/");
   const isHtml = s => /\.html?$/i.test(s || "");
-  const isLang = s => !!(window.matchLang && window.matchLang(s));
+  const isLang = s => !!matchLang(s);  // <-- use local matcher (NOT window.matchLang)
 
   let i = 0;
   let repo = "";
 
-  // --- Decide repo ---
   if (!raw[i]) {
-    // no first segment → homepage root
     repo = "color_converter_wplace";
   } else if (isLang(raw[i]) || isHtml(raw[i])) {
-    // first segment is a language or html → force fallback repo
     repo = "color_converter_wplace";
   } else {
-    // normal case: first segment is the repo
     repo = raw[i++];
   }
-
-  // --- Skip language segment if present ---
   if (raw[i] && isLang(raw[i])) i++;
 
-  // --- Build page path ---
   let page = raw.slice(i).join("/") || "index.html";
-  if (!isHtml(page)) {
-    page = (page.replace(/\/+$/, "") || "index") + ".html";
-  }
-
+  if (!isHtml(page)) page = (page.replace(/\/+$/, "") || "index") + ".html";
   return { repo, page };
 }
-
 
 // Build the target URL for a given language while keeping the same page
 function targetForLang(lang) {
@@ -190,7 +179,7 @@ root.querySelectorAll('a[data-keep-lang]').forEach(a => {
 
 
 function initLang() {
-  // Priority: ?lang → folder (/pt/) → saved → <html lang> → 'en'
+  // Priority: ?lang → folder → saved → <html lang> → 'en'
   const desired =
     getUrlLang() ||
     getPathLang() ||
@@ -198,45 +187,29 @@ function initLang() {
     document.documentElement.getAttribute("lang") ||
     "en";
 
+  // If this page has no repo segment (e.g. /pt/index.html), redirect to the correct one
+  const { repo, page } = computeRepoAndPage();
+  if (!repo) {
+    const use  = matchLang(desired) || "en";
+    const base = "/color_converter_wplace";
+    const dest = (page || "").toLowerCase() === "gallery.html"
+      ? `${base}/gallery.html${use === "en" ? "" : `?lang=${use}`}`
+      : (use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`);
+    window.location.replace(dest);
+    return; // stop here; we'll re-init on the correct URL
+  }
+
   setCurrentLang(desired);
   applyTranslations(document);
 
-  // helper: compute correct target URL for a given lang
-  function targetForLang(lang) {
-  const use = matchLang(lang) || "en";
-  const parts = window.location.pathname.replace(/^\/+/, "").split("/");
-  let repo = "";
-  let page = "index.html";
-
-  if (parts.length && !matchLang(parts[0]) && !/\.html?$/i.test(parts[0])) {
-    repo = parts.shift();
-  }
-  if (parts.length && matchLang(parts[0])) parts.shift();
-
-  page = parts.join("/") || "index.html";
-  if (!/\.html?$/i.test(page)) {
-    page = (page.replace(/\/+$/, "") || "index") + ".html";
-  }
-
-  const base = repo ? `/${repo}` : "";
-
-
-  if (page.toLowerCase() === "gallery.html") {
-    return `${base}/gallery.html?lang=${use}`;
-  }
-
-  return use === "en" ? `${base}/${page}` : `${base}/${use}/${page}`;
-}
-
-  // wire selectors
+  // wire selectors (use the GLOBAL targetForLang)
   const hook = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = desired;
     el.addEventListener("change", () => {
       const chosen = el.value;
-      localStorage.setItem(LS_KEY, chosen);
-      // redirect to corresponding locale page
+      localStorage.setItem("lang", chosen);
       window.location.href = targetForLang(chosen);
     });
   };
@@ -248,20 +221,20 @@ function initLang() {
   window.refreshSelectionBar?.();
 }
 
+// expose
+window.getCurrentLang = getCurrentLang;
+window.setCurrentLang = setCurrentLang;
+window.applyTranslations = applyTranslations;
+window.initLang = initLang;
+window.decorateLinks = decorateLinks;
+window.matchLang = matchLang;
+window.computeRepoAndPage = computeRepoAndPage;
+// NOTE: targetForLang is defined globally elsewhere; no inner duplicate here.
 
-  // expose
-  window.getCurrentLang = getCurrentLang;
-  window.setCurrentLang = setCurrentLang;
-  window.applyTranslations = applyTranslations;
-  window.initLang = initLang;
-  window.decorateLinks = decorateLinks;
-
-  // boot
-  if (document.readyState !== "loading") initLang();
-  else document.addEventListener("DOMContentLoaded", initLang);
+// boot
+if (document.readyState !== "loading") initLang();
+else document.addEventListener("DOMContentLoaded", initLang);
 })();
-
-
 
 window.translations = {
   en: {
