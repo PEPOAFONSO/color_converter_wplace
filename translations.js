@@ -103,7 +103,6 @@ function computeRepoAndPage() {
   return { repo, page };
 }
 
-
 // Build the target URL for a given language while keeping the same page
 function targetForLang(lang) {
   const use = matchLang(lang) || "en";
