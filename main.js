@@ -150,7 +150,7 @@ function updatePadraoFromActiveButtons() {
 
   const idsToSave = [];
   activeButtons.forEach(btn => {
-    const rgb = rgbFromChip(btn);          // <<< use this
+    const rgb = rgbFromChip(btn);
     if (rgb) padrao.push(rgb);
     idsToSave.push(btn.id);
   });
@@ -158,11 +158,9 @@ function updatePadraoFromActiveButtons() {
   localStorage.setItem('activeColors', JSON.stringify(idsToSave));
 
   if (originalImage) {
-    applyScale();
-    applyPreview();
+    reprocessWithCurrentPalette();
   }
 }
-
 
 const upload = document.getElementById('upload');
 const canvas = document.getElementById('canvas');
@@ -218,7 +216,24 @@ document.getElementById('clipboard').addEventListener('click', async function ()
   }
 });
 
+// Draw the *processed* image into the already-sized visible canvas,
+// without changing canvas width/height or reading layout.
+function repaintPreviewSameSize() {
+  const src = processedCanvas || canvas;
+  if (!src || !canvas) return;
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
+}
 
+function resetVisibleToScaled() {
+  if (!scaledCanvas) return;
+  canvas.width  = scaledCanvas.width;
+  canvas.height = scaledCanvas.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(scaledCanvas, 0, 0);
+}
 
 // Handle paste events to allow image pasting
 document.addEventListener('paste', function (event) {
@@ -520,6 +535,72 @@ _colorCounts = colorCounts;
 return colorCounts;
 }
 
+let _lastAppliedScale = 1;
+(function wrapApplyScale(){
+  const _orig = applyScale;
+  applyScale = function() {
+    _orig();
+    _lastAppliedScale = parseFloat(scaleRange.value) || 1;
+  };
+})();
+
+function reprocessWithCurrentPalette() {
+  if (!originalImage) return;
+
+  const targetScale = parseFloat(scaleRange.value) || 1;
+  const needRescale = (targetScale !== _lastAppliedScale);
+
+  if (needRescale) {
+    // Slow path: scale changed — normal/full pipeline keeps layout correct
+    applyScale();
+    applyPreview();
+    return;
+  }
+
+  // Fast path: only palette/visibility changed
+  const vp = document.getElementById('canvasViewport');
+
+  // 1) remember absolute scroll (cheap)
+  const keepSL = vp ? vp.scrollLeft : 0;
+  const keepST = vp ? vp.scrollTop  : 0;
+
+  // 2) if we don't have a base image, fall back to slow path once
+  if (!scaledCanvas) {
+    applyScale();
+    applyPreview();
+    return;
+  }
+
+  // 3) temporarily switch the visible canvas to base resolution
+  const prevW   = canvas.width;
+  const prevH   = canvas.height;
+  const prevCSSW = canvas.style.width;
+  const prevCSSH = canvas.style.height;
+
+  canvas.width  = scaledCanvas.width;
+  canvas.height = scaledCanvas.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(scaledCanvas, 0, 0);
+
+  // 4) re‑quantize at base resolution (this updates processedCanvas)
+  processarImagem();
+
+  // 5) restore visible canvas size (don’t recompute layout/center)
+  canvas.width  = prevW;
+  canvas.height = prevH;
+  canvas.style.width  = prevCSSW;
+  canvas.style.height = prevCSSH;
+
+  // 6) repaint processed image into the current visible size (no resize/center math)
+  repaintPreviewSameSize();
+
+  // 7) restore the same scroll offsets
+  if (vp) {
+    vp.scrollLeft = keepSL;
+    vp.scrollTop  = keepST;
+  }
+}
+
 // Image info display
 function showImageInfo(width, height) {
   if (width == null || height == null) return;
@@ -538,11 +619,51 @@ function showImageInfo(width, height) {
   }
 }
 
+// Read column choice (default 3)
+function getColorColumnCount() {
+  const defaultColumns = 3;
+  const maxColumns = 4;
+  const columnCount = document.getElementById('color-columns-manual-count');
+  const value = columnCount ? parseInt(columnCount.value, 10) : defaultColumns;
+  return Number.isFinite(value) && value > 0 ? Math.min(maxColumns, value) : defaultColumns;
+}
+
+// Read chosen mode: 'dynamic' or 'manual'
+function getColumnMode() {
+  const dynamic = document.getElementById('color-columns-dynamic');
+  return (dynamic && dynamic.checked) ? 'dynamic' : 'manual';
+}
+
+// Enable/Disable the select based on the current mode
+function syncColumnCountSelectState() {
+  const columnCount = document.getElementById('color-columns-manual-count');
+  if (!columnCount) return;
+  const mode = getColumnMode();
+  columnCount.disabled = (mode === 'dynamic');
+  columnCount.setAttribute('aria-disabled', String(columnCount.disabled));
+}
 
 // Color usage display
 function showColorUsage(colorCounts = {}, order = 'original') {
   const colorListDiv = document.getElementById('color-list');
   if (!colorListDiv) return;
+
+  // Persist for re-renders triggered by column controls
+  window._colorCounts = colorCounts;
+
+  // --- Column layout (dynamic/manual) ---
+  const mode = (typeof getColumnMode === 'function' && getColumnMode()) || 'manual';
+  const cols = (typeof getColorColumnCount === 'function' && getColorColumnCount()) || 3;
+
+  // Toggle dynamic class and manual template var
+  if (mode === 'dynamic') {
+    colorListDiv.classList.add('dynamic');
+    // ensure manual var doesn't interfere
+    colorListDiv.style.removeProperty('--color-list-template');
+  } else {
+    colorListDiv.classList.remove('dynamic');
+    colorListDiv.style.setProperty('--color-list-template', `repeat(${cols}, minmax(0, 1fr))`);
+  }
 
   // Keep palette order, show if count > 0 or hidden
   const rows = padrao.map(([r, g, b]) => {
@@ -555,10 +676,11 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 
   colorListDiv.innerHTML = '';
 
-  const rowsSorted = order === "original" ? rows : rows.toSorted((a, b) => b.count - a.count);
+  const rowsSorted = order === 'original'
+    ? rows
+    : rows.toSorted((a, b) => b.count - a.count);
 
-  rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
-  rowsSorted.forEach(({r, g, b, key, name, count, hidden}) => {
+  rowsSorted.forEach(({ r, g, b, key, name, count, hidden }) => {
     const row = document.createElement('div');
     row.className = 'usage-item' + (hidden ? ' hidden' : '');
     row.style.display = 'flex';
@@ -575,22 +697,16 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 
     const label = document.createElement('span');
     if (hidden && count === 0) {
-      // Show eye icon instead of 0px
       label.textContent = `${name}: `;
       const eyeIcon = document.createElement('span');
       eyeIcon.className = 'usage-hide-icon';
       label.appendChild(eyeIcon);
     } else {
-      label.textContent = hidden
-        ? `${name}: ${count} px`
-        : `${name}: ${count} px`;
+      label.textContent = `${name}: ${count} px`;
+
       
       // Differentiate Paid colors
-      const isPaid = paidColors.has(key);
-      if (isPaid) label.style.color = 'gold';
-      
-      // Differentiate Paid colors
-      const isPaid = paidColors.has(key);
+      const isPaid = (typeof paidColors !== 'undefined') && paidColors.has(key);
       if (isPaid) label.style.color = 'gold';
     }
 
@@ -681,9 +797,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
       updateMasterLabel();
       saveState();
       updatePadraoFromActiveButtons();
-      if (window.originalImage) {
-        reprocessWithCurrentPalette();
-      }
     });
   });
 })({
@@ -742,9 +855,6 @@ function showColorUsage(colorCounts = {}, order = 'original') {
             updateMasterLabel();
             saveState();
             updatePadraoFromActiveButtons();
-            if (window.originalImage) {
-              reprocessWithCurrentPalette();
-            }
           }, 0);
         });
       });
@@ -811,7 +921,7 @@ function augmentColorChipsWithEye() {
         else hiddenColors.add(key);
         updateEyeForButton(btn);
         refreshMasterEyes();
-        if (window.originalImage) { reprocessWithCurrentPalette(); }
+        if (originalImage) { applyScale?.(); applyPreview?.(); }
       });
       btn.appendChild(eye);
     }
@@ -1116,7 +1226,7 @@ scaleRange.addEventListener('change', () => {
   applyPreview();
 });
 
-// ---- SINGLE upload handler: fit-to-viewport + center on load ----
+// ---- Upload handler: fit-to-viewport + center on load ----
 upload.addEventListener('change', e => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -1137,6 +1247,7 @@ upload.addEventListener('change', e => {
     // controls + info
     scaleRange.value = 1.0;
     scaleValue.textContent = '1.00x';
+    _lastAppliedScale = parseFloat(scaleRange.value) || 1
     initDimensions?.();
     showImageInfo(currentImageWidth, currentImageHeight);
 
@@ -1209,113 +1320,6 @@ window.addEventListener('beforeunload', () => {
   zoomValue.textContent  = '1.00x';
 });
 
-// Language selector change event
-document.addEventListener("DOMContentLoaded", () => {
-  const parts = window.location.pathname.split("/").filter(Boolean);
-
-  // ---------- helpers ----------
-  const normalize = s => (s || "").replace(/_/g, "-").toLowerCase();
-  const SUPPORTED = [
-    "en","pt","de","de-CH","es","fr","uk","vi","pl","ja","nl","ru","tr"
-  ];
-  const SUP_NORM = SUPPORTED.map(normalize);
-
-  const isLang = seg => SUP_NORM.includes(normalize(seg));
-  const last = arr => arr[arr.length - 1] || "";
-
-  // Detect repoName and current path lang
-  let repoName = "";
-  let langFromPath = "en";
-  let pathAfterLang = ""; // e.g. "gallery.html" or "index.html"
-
-  if (parts.length) {
-    if (isLang(parts[0])) {
-      // /<lang>/...
-      langFromPath = parts[0];
-      pathAfterLang = parts.slice(1).join("/") || "index.html";
-    } else {
-      // maybe /<repo>/... or /<page>
-      repoName = parts[0];
-      if (parts.length > 1 && isLang(parts[1])) {
-        langFromPath = parts[1];
-        pathAfterLang = parts.slice(2).join("/") || "index.html";
-      } else {
-        // no lang in path
-        langFromPath = "en";
-        pathAfterLang = parts.slice(1).join("/") || (parts.length ? last(parts) : "index.html");
-        if (!parts[1]) {
-          pathAfterLang = parts[0] || "index.html";
-          repoName = "";
-        }
-      }
-    }
-  } else {
-    langFromPath = "en";
-    pathAfterLang = "index.html";
-  }
-
-  // Normalize page name
-  if (!/\.(html?)$/i.test(pathAfterLang)) {
-    pathAfterLang = (pathAfterLang.replace(/\/+$/, "") || "index") + ".html";
-  }
-
-  const base = repoName ? `/${repoName}` : "";
-
-  // ---------- load or derive saved lang ----------
-  let savedLang = localStorage.getItem("lang");
-  if (!savedLang) {
-    const nav = (navigator.language || "en").toLowerCase();
-    const navBase = nav.split("-")[0];
-    savedLang =
-      SUP_NORM.includes(normalize(nav)) ? nav :
-      SUP_NORM.includes(normalize(navBase)) ? navBase : "en";
-    localStorage.setItem("lang", savedLang);
-  }
-
-  // ---------- redirect if URL lang ≠ savedLang ----------
-  if (normalize(langFromPath) !== normalize(savedLang) && pathAfterLang !== "gallery.html") {
-    const use = savedLang;
-    const dest =
-      normalize(use) === "en"
-        ? `${base}/${pathAfterLang}`
-        : `${base}/${use}/${pathAfterLang}`;
-    window.location.replace(dest);
-    return;
-  }
-
-  // ---------- hook up selector ----------
-  const select = document.getElementById("lang-select");
-  if (select) {
-    select.value = savedLang;
-
-    select.addEventListener("change", () => {
-      const chosen = select.value;
-      localStorage.setItem("lang", chosen);
-
-      let target;
-      if (pathAfterLang === "gallery.html") {
-        // Always keep gallery at root, just add query param
-        target = `${base}/gallery.html?lang=${chosen}`;
-      } else {
-        target =
-          normalize(chosen) === "en"
-            ? `${base}/${pathAfterLang}`
-            : `${base}/${chosen}/${pathAfterLang}`;
-      }
-
-      window.location.href = target;
-    });
-  }
-});
-
-
-
-
-
-// Current language getter
-function getCurrentLang() {
-  return localStorage.getItem("lang") || "en";
-}
 
 // Initial refresh
 showImageInfo(currentImageWidth, currentImageHeight);
@@ -1439,9 +1443,9 @@ function isDitheringOn() {
     btn.classList.toggle('active', next);
     localStorage.setItem(DITHER_KEY, String(next));
 
-if (originalImage) {
-  reprocessWithCurrentPalette();
-}
+  if (originalImage) {
+    reprocessWithCurrentPalette();
+  }
 
   });
 
@@ -1525,6 +1529,55 @@ async function saveImageToGallery(blob) {
   });
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  const dynamic     = document.getElementById('color-columns-dynamic');
+  const manual      = document.getElementById('color-columns-manual');
+  const columnCount = document.getElementById('color-columns-manual-count');
+
+  const triggerRerender = () => {
+    syncColumnCountSelectState();
+    if (window._colorCounts) showColorUsage(window._colorCounts, getColorsListOrder());
+  };
+
+  // Restore saved prefs
+  const savedMode = localStorage.getItem("colorColumnMode");
+  if (savedMode === "dynamic" && dynamic) dynamic.checked = true;
+  else if (savedMode === "manual" && manual) manual.checked = true;
+
+  const savedCountRaw = localStorage.getItem("columnCount");
+  if (columnCount && savedCountRaw !== null) {
+    const parsed = parseInt(savedCountRaw, 10);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 4) {
+      columnCount.value = String(parsed);
+    }
+  }
+
+  // Initial sync + render
+  triggerRerender();
+
+  // Persist changes and re-render
+  dynamic?.addEventListener('change', () => {
+    localStorage.setItem("colorColumnMode", getColumnMode());
+    triggerRerender();
+  });
+  manual?.addEventListener('change', () => {
+    localStorage.setItem("colorColumnMode", getColumnMode());
+    triggerRerender();
+  });
+  columnCount?.addEventListener('change', () => {
+    localStorage.setItem("columnCount", getColorColumnCount());
+    triggerRerender();
+  });
+
+  // If you have sort radios, keep this so re-sorting re-renders
+  document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (window._colorCounts) showColorUsage(window._colorCounts, getColorsListOrder());
+    });
+  });
+});
+
+
 // ===============================
 // Add to Gallery
 // ===============================
@@ -1586,7 +1639,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirect to gallery after a brief pause
         setTimeout(() => {
-          const target = lang === "en" ? "gallery.html" : `gallery.html?lang=${lang}`;
+          const lang = (typeof getCurrentLang === "function" ? getCurrentLang() : "en");
+
+          // compute repo base (e.g., "/color_converter_wplace" on GitHub Pages)
+          const parts = window.location.pathname.replace(/^\/+/, "").split("/");
+          const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
+          let repo = "";
+          if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
+            repo = `/${parts[0]}`;
+          }
+
+          // gallery lives at root, never under a locale folder
+          const base = repo;                       // "" or "/<repo>"
+          const target =
+            lang.toLowerCase() === "en"
+              ? `${base}/gallery.html`
+              : `${base}/gallery.html?lang=${lang}`;
+
           window.location.href = target;
         }, 700);
       } catch (err) {

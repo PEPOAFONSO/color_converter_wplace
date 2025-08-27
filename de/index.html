@@ -267,6 +267,25 @@
       <input type="radio" name="colors-list-order" id="used" value="used">
       <label for="used">Meistgenutzt</label>
     </div>
+    
+    <!-- Columns chooser / mode -->
+    <div>
+      <p class="section-title">Spalten</p>
+
+      <input type="radio" name="color-columns-mode" id="color-columns-dynamic" value="dynamic" checked>
+      <label for="color-columns-dynamic">Dynamisch</label>
+
+      <input type="radio" name="color-columns-mode" id="color-columns-manual" value="manual">
+      <label for="color-columns-manual">Manuell</label>
+      
+      <select style="margin-left: 8px;" id="color-columns-manual-count" aria-label="Color list columns">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
     <div id="color-list" class="card span-2"></div>
   </section>
 </main>
