@@ -158,52 +158,7 @@ function navigateToLang(lang) {
     });
   }
 
-function getRepo() {
-  const parts = location.pathname.split('/').filter(Boolean);
-  return (location.hostname.endsWith('github.io') && parts.length) ? parts[0] : '';
-}
-
-function decorateLocalLinksKeepLang() {
-  const repo = getRepo();
-  const lang = (window.getCurrentLang && window.getCurrentLang()) ||
-               new URLSearchParams(location.search).get('lang') || '';
-
-  document.querySelectorAll('a[data-keep-lang]').forEach(a => {
-    const raw = a.getAttribute('href') || '';
-    // ignore external/mail/hash
-    if (/^(https?:|mailto:|#)/i.test(raw)) return;
-
-    let path = raw;
-
-    if (raw.startsWith('/')) {
-      // root-absolute: make it repo-aware
-      const rest = raw.replace(/^\//, '');
-      const firstSeg = rest.split('/')[0] || '';
-
-      // ⬇️ your snippet goes logically here
-      // If href already starts with the repo, don't add again
-      let repoBase = repo ? `/${repo}` : '';
-      if (repoBase && firstSeg.toLowerCase() === repo.toLowerCase()) {
-        repoBase = ''; // avoid /color_converter_wplace/color_converter_wplace
-      }
-      path = `${repoBase}/${rest}`;
-    } else {
-      // relative like "studio.html" or "../studio.html" → leave as-is
-      path = raw;
-    }
-
-    // keep ?lang
-    const url = new URL(path, location.href);
-    if (lang && lang !== 'en') url.searchParams.set('lang', lang);
-    else url.searchParams.delete('lang');
-
-    a.setAttribute(
-      'href',
-      url.pathname.replace(/\/{2,}/g, '/') + url.search + url.hash
-    );
-  });
-}
-
+  // Keep internal links carrying the language (?lang=xx)
 // Keep internal links carrying the language (?lang=xx)
 function decorateLinks(root = document) {
   // current language
@@ -233,13 +188,6 @@ function decorateLinks(root = document) {
 
     // strip leading language segment if present
     const segs = url.pathname.replace(/^\/+/, "").split("/");
-    const maybeRepo = (location.pathname.replace(/^\/+/, "").split("/")[0] || "");
-    const hrefFirstSeg = (segs[0] || "");
-
-    // If href already begins with the repo segment, don't prefix again
-    if (repoBase && hrefFirstSeg.toLowerCase() === maybeRepo.toLowerCase()) {
-      repoBase = "";
-    }
     if (segs.length && KNOWN_SET.has((segs[0] || "").toLowerCase())) segs.shift();
 
     const filename = segs[segs.length - 1] || "";
@@ -350,11 +298,8 @@ window.computeRepoAndPage = computeRepoAndPage;
 // NOTE: targetForLang is defined globally elsewhere; no inner duplicate here.
 
 // boot
-if (document.readyState !== "loading") {
-  decorateLocalLinksKeepLang();
-} else {
-  document.addEventListener("DOMContentLoaded", decorateLocalLinksKeepLang);
-}
+if (document.readyState !== "loading") initLang();
+else document.addEventListener("DOMContentLoaded", initLang);
 })();
 
 window.translations = {
