@@ -9,6 +9,7 @@ Convert the colors of your images, pixel art or any creation to the available in
 - Scaling;
 - Dithering;
 - Create or edit images (Studio);
+- AI image generation;
 - Store your images locally(Gallery);
 
 
