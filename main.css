@@ -67,7 +67,7 @@ main {
 /* Utilities */
 .container{width: 85%; margin-inline:auto; padding-inline:16px}
 .muted{color:var(--muted); font-size:.95rem}
-.label{display:block; margin-bottom:8px; font-weight:600; font-size: 1.05re}; 
+.label{display:block; margin-bottom:8px; font-weight:600; font-size: 1.05rem}; 
 .sr-only{position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px)}
 
 /* ---------- Header / Nav ---------- */

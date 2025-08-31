@@ -1,0 +1,463 @@
+/* Build on your main.css tokens */
+:root{
+  --brand:#007bff;
+  --brand-2:#0095ff;
+  --gp-top: linear-gradient(90deg,#7c3aed, #2563eb);
+  --gp-panel: #171a22;
+  --gp-left: #202431;
+  --gp-right:#202431;
+  --gp-accent:#22d3ee;
+}
+
+/* SINGLE CARD FRAME */
+.gp-card{ display:grid; gap:16px; background:var(--gp-panel); }
+
+/* Top band without balls */
+.gp-topband{
+  display:grid; grid-template-columns: 1fr auto; align-items:center;
+  background:var(--gp-top); padding:10px 14px; border-radius:12px;
+}
+.gp-topband .rings{ display:none; }
+.gp-title h1{ margin:0; font-size:22px }
+.gp-title small{ display:block; opacity:.8 }
+
+.gp-workarea{
+  display: grid;
+  grid-template-columns: minmax(176px, max-content) 1fr minmax(220px, max-content);
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* LEFT: palette column */
+.gp-left{
+  align-self: stretch;
+  position: static;
+  top: calc(64px + 12px);
+  background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 220px;
+}
+/* Palette grids */
+.palette{
+  display:grid;
+  grid-template-columns: repeat(5, 24px);
+  gap:8px;
+}
+
+/* Swatch must include border INSIDE the 24×24 grid cell */
+.palette .swatch{
+  display:block;
+  width:24px;
+  height:24px;
+  padding:0;
+  box-sizing:border-box;
+  border:1px solid #0009;
+  border-radius:6px;
+  cursor:pointer;
+  line-height:0;
+}
+
+.palette{ overflow: visible; }
+
+/* highlight */
+.palette .swatch[aria-pressed="true"]{
+  outline:2px solid var(--gp-accent);
+  outline-offset:2px;
+}
+
+.colors-panel{
+  display: grid;
+  position: sticky;
+  top: calc(64px + 12px);
+  gap: 12px;
+  background: #141a24;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* Section titles and spacing */
+.palette-block{ display: grid; gap: 8px; }
+
+/* Palette grid keeps compact rhythm */
+.colors-panel .palette{
+  grid-template-columns: repeat(5, 24px);
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Responsive parity with right column */
+@media (max-width: 1024px){
+  .gp-left{ order:2; min-width: unset; position: static; }
+}
+
+/* CENTER: canvas */
+.gp-canvas{ 
+  position:relative;
+  align-self: stretch;
+}
+.notebook{
+  background:#2a2f3d; border-radius:14px; padding:12px; border:1px solid var(--border);
+  box-shadow: inset 0 0 0 2px #0002;
+}
+
+/* The stage = exact image pixel size. We scale this for zoom. */
+.canvas-stage {
+  position: relative;
+  background: #ffffff;    /* white paintable zone */
+  outline: 1px dotted #888;  /* dotted gray border */
+
+  /* Size is set dynamically in JS (gridN px × gridN px) */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* remove decorative balls */
+.notebook::before, .notebook::after{ display:none; }
+
+.paper{
+  background:#fff; border-radius:10px; box-shadow:0 6px 0 #121521;
+  padding:10px; position:relative; overflow:hidden;
+}
+.studio-viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: clamp(320px, 58vh, 640px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 10px;
+  background: #d0d3d8;
+}
+.studio-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+#gridCanvas {  pointer-events: none; image-rendering: pixelated; }
+
+#paintCanvas { cursor: crosshair; }
+
+/* === Right panel === */
+.gp-right{
+  align-self: stretch;
+  position: static;
+  top: calc(64px + 12px);
+  background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); /* fixed alphas */
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 220px;
+}
+
+/* Tools card layout */
+.tools-panel{
+  display: grid;
+  position: sticky;
+  top: calc(64px + 12px);
+  gap: 10px;
+  background: #141a24;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.tools-heading{
+  margin: 0;
+  font-weight:600; 
+  font-size: 1.05rem;
+}
+
+.tools-sep{
+  border: 0;
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+.tools-group{ display: grid; gap: 8px; }
+
+/* Grid for icon buttons */
+.btn-grid{
+  display: grid;
+  grid-template-columns: repeat(5, 64px);
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Row for Undo/Redo */
+.tools-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Tool buttons: icon + tiny label */
+.gp-right .toolbtn{
+  width: 64px;
+  height: 64px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+  padding: 6px;
+  background: #1b1f2b;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: #e7ebf3;
+  box-shadow: inset 0 -2px 0 #0003;
+  cursor: pointer;
+  transition: border-color .15s, transform .08s, background .15s;
+}
+
+.gp-right .toolbtn:hover{
+  border-color: #5da8ff66;
+  transform: translateY(-1px);
+}
+
+.gp-right .toolbtn[aria-pressed="true"]{
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 2px;
+  background: #253048;
+}
+
+.gp-right .toolbtn .glyph{
+  font-size: 18px;
+  line-height: 1;
+}
+
+.gp-right .toolbtn small{
+  font-size: .63rem;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: .02em;
+}
+
+/* Slim secondary buttons for Undo/Redo */
+.btn.slender{
+  height: 38px;
+  padding: 8px 10px;
+  margin: 0;
+  font-weight: 700;
+}
+
+
+/* Controls box uses a compact 2-column grid so Zoom value sits on the right */
+.mini-controls{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  background: #141a24;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.mini-controls .label{ grid-column: 1 / -1; }
+
+.mini-controls .btn { grid-column: auto; width: auto; }
+
+.mini-controls .btn-row{
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mini-controls .btn-row .btn{
+  width: auto;
+  min-width: 100px;
+  padding: 8px 14px;
+}
+
+#gridSize{ grid-column: 1 / -1; } 
+#zoom{ grid-column: 1; width:100%; }
+#zoomLabel{
+  grid-column: 2;
+  align-self: center;
+  min-width: 2.5em;
+  text-align: right;
+  color: var(--muted);
+}
+
+/* Inputs match global look */
+.gp-right select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  background:#0f1420; color:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  height:40px; padding:8px 10px;
+  box-shadow:0 2px 8px #0006;
+}
+.gp-right input[type="range"]{ accent-color: var(--brand); }
+
+/* Custom toggle style */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.switch-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 42px;
+  height: 22px;
+  border-radius: 999px;
+  background: #2c2f3a;
+  border: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.switch-row input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #9ca3af;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.switch-row input[type="checkbox"]:checked {
+  background: var(--brand-2);
+  border-color: var(--brand);
+}
+
+.switch-row input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+/* Slightly denser spacing on narrow screens */
+@media (max-width: 1200px){
+  .gp-right{ gap:10px; padding:10px; }
+  .toolbtn{ width:44px; height:44px; }
+}
+
+/* Brush size popover */
+.brush-popover{
+  position: fixed;
+  pointer-events: auto;
+  padding: 6px;
+  background: #0f131b;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: repeat(5, 28px);
+  gap: 6px;
+  z-index: 9999;
+}
+
+.brush-popover[hidden] { display: none !important; }
+
+.brush-size-swatch{
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  border: 1px solid #0008;
+  background: #1b2130;
+  display: grid; place-items: center;
+  cursor: pointer;
+  box-shadow: inset 0 -2px 0 #0003;
+}
+
+/* the dot/shape inside showing the brush footprint */
+.brush-size-swatch::before{
+  content: "";
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 999px;         /* round brush */
+  background: #e5e7eb;
+}
+
+#eraserSizePopover .brush-size-swatch::before{
+  border-radius: 2px;
+}
+
+/* scale the inner dot by data-size (1..12) */
+.brush-size-swatch[data-size="1"]::before { transform: scale(0.25); }
+.brush-size-swatch[data-size="2"]::before { transform: scale(0.35); }
+.brush-size-swatch[data-size="3"]::before { transform: scale(0.45); }
+.brush-size-swatch[data-size="4"]::before { transform: scale(0.55); }
+.brush-size-swatch[data-size="6"]::before { transform: scale(0.72); }
+.brush-size-swatch[data-size="8"]::before { transform: scale(0.88); }
+.brush-size-swatch[data-size="12"]::before{ transform: scale(1.10); }
+
+.brush-size-swatch[aria-pressed="true"]{
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 2px;
+}
+
+/* Bottom bar */
+.gp-bottombar{
+  display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:center;
+  background:#1b1f2b; border-radius:12px; padding:10px; border:1px solid var(--border); 
+}
+.prompt-wrap{
+  display:grid; grid-template-columns: 1fr auto auto;
+  gap:10px; align-items:center; min-width:0;
+}
+#prompt{
+  width:100%; min-height:42px; resize:vertical; background:#0f131b; color:#fff;
+  border:1px solid var(--border); border-radius:10px; padding:8px;
+}
+
+.upload-inner{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.upload-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px; height:28px;
+  font-size:24px;
+  line-height:1;
+  user-select:none;
+  opacity:.9;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.35));
+}
+
+
+/* Responsive */
+@media (max-width: 1200px){
+  .gp-bottombar{ grid-template-columns: 1fr; }
+  .prompt-wrap{ grid-template-columns: 1fr auto; }
+}
+
+@media (max-width: 1024px){
+  .gp-workarea{ grid-template-columns: 1fr; }
+  .gp-left, .gp-right{ order:2 }
+  .gp-canvas{ order:1 }
+  .palette{ grid-template-columns: repeat(10, 24px); justify-content:center; }
+}
+
+.palette-sep{
+  border: 0;
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0 0 0;
+}

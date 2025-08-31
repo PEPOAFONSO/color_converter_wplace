@@ -1,26 +1,34 @@
-<h1>WPlace Pixel Art Color Converter</h1>
-<div>
-  Convert the colors of your image to the available in Wplace.
-</div>
-<br>
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/8573c679-1117-42a5-ae86-ea6ab3222bda" />
-<br>
-<h2>License:</h2>
-Copyright (c) 2025 PEPOAFONSO. All rights reserved.
-This code is proprietary and may not be used, copied, modified, or distributed
-without explicit written permission from the author.
-<br>
-<h2>Credits:</h2>
-<div>
-  Main developer: PEPOAFONSO
-  <br>
-  Original code Created by PONTOGAMER
-  <br>
-  Adaptation to website: ATLAS
-  <br>
-  Contributor: Autergame
-  <br>
-  Motivational helper: kromck
-</div>
-  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>  <br>
-The Game
+# WPlace Pixel Art Color Converter
+
+Convert the colors of your images, pixel art or any creation to the available in Wplace.
+
+## Funcionalidades
+
+- Color conversion;
+- Real time preview;
+- Scaling;
+- Dithering;
+- Create or edit images (Studio);
+- Store your images locally(Gallery);
+
+
+## Main Page
+
+
+
+## Studio
+## Gallery
+## Autors
+
+### Devs:
+- Main developer: [PEPOAFONSO](https://github.com/PEPOAFONSO)
+- Original code Created by [PONTOGAMER](https://github.com/PONTOGAMER)
+- Adaptation to website: [ATLAS](https://github.com/martimcabral)
+- Contributor: [Autergame](https://github.com/autergame)
+- Motivational helper: [kromck](https://github.com/kromck)
+
+### Translations:
+- Turkish translations: [kedydev](https://github.com/kedydev)
+- Hebrew translations: [JhonGames](https://github.com/JhonGames)
+- Simplified Chinese translations [blackmos233](https://github.com/blackmos233)
+- Italian translations [fuffo1337](https://github.com/fuffo1337)

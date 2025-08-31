@@ -37,6 +37,130 @@
     }
   }
 
+  // CRC32 for PNG chunks
+  function crc32(buf) {
+    let c = ~0;
+    for (let i = 0; i < buf.length; i++) {
+      c ^= buf[i];
+      for (let k = 0; k < 8; k++) {
+        c = (c >>> 1) ^ (0xEDB88320 & -(c & 1));
+      }
+    }
+    return ~c >>> 0;
+  }
+
+  // Create a PNG tEXt chunk for a given key + string value
+  function makeTextChunk(keyword, value) {
+    const enc = new TextEncoder();
+    const keyBytes = enc.encode(keyword);
+    const valBytes = enc.encode(value);
+
+    // data = key + null + value
+    const data = new Uint8Array(keyBytes.length + 1 + valBytes.length);
+    data.set(keyBytes, 0);
+    data[keyBytes.length] = 0;
+    data.set(valBytes, keyBytes.length + 1);
+
+    const type = new Uint8Array([0x74, 0x45, 0x58, 0x74]); // "tEXt"
+    const len = data.length;
+
+    const out = new Uint8Array(12 + len); // length(4) + type(4) + data(len) + crc(4)
+    // write length
+    out[0] = (len >>> 24) & 0xFF;
+    out[1] = (len >>> 16) & 0xFF;
+    out[2] = (len >>> 8) & 0xFF;
+    out[3] = (len >>> 0) & 0xFF;
+    // write type
+    out.set(type, 4);
+    // write data
+    out.set(data, 8);
+    // compute crc over type+data
+    const crc = crc32(out.subarray(4, 8 + len));
+    out[8 + len] = (crc >>> 24) & 0xFF;
+    out[9 + len] = (crc >>> 16) & 0xFF;
+    out[10 + len] = (crc >>> 8) & 0xFF;
+    out[11 + len] = (crc >>> 0) & 0xFF;
+
+    return out;
+  }
+
+  // Insert a tEXt chunk right after IHDR
+  async function pngWithMeta(blob, metaObj) {
+    if (!blob || blob.type !== "image/png") return blob;
+
+    const ab = await blob.arrayBuffer();
+    const bytes = new Uint8Array(ab);
+
+    // PNG signature
+    const sig = [137,80,78,71,13,10,26,10];
+    for (let i = 0; i < 8; i++) if (bytes[i] !== sig[i]) return blob;
+
+    // IHDR starts at offset 8; skip 8 (len+type) + length + 4 (crc)
+    let off = 8;
+    const ihdrLen = (bytes[off]<<24) | (bytes[off+1]<<16) | (bytes[off+2]<<8) | bytes[off+3];
+    const ihdrType = String.fromCharCode(bytes[off+4], bytes[off+5], bytes[off+6], bytes[off+7]);
+    if (ihdrType !== 'IHDR') return blob;
+    const afterIHDR = off + 12 + ihdrLen; // 12 = length(4)+type(4)+crc(4)
+
+    // Build tEXt chunk with JSON meta
+    const meta = {
+      ...metaObj,
+      app: "Wplace Color Converter",
+      version: 1
+    };
+    const chunk = makeTextChunk("wplaceMeta", JSON.stringify(meta));
+
+    // New file = sig + [IHDR chunk bytes] + [tEXt] + [rest]
+    const out = new Uint8Array(bytes.length + chunk.length);
+    out.set(bytes.subarray(0, afterIHDR), 0);
+    out.set(chunk, afterIHDR);
+    out.set(bytes.subarray(afterIHDR), afterIHDR + chunk.length);
+
+    return new Blob([out], { type: "image/png" });
+  }
+
+  // Try to read our "wplaceMeta" tEXt as JSON
+  async function readPngMeta(blob) {
+    try {
+      if (!blob || blob.type !== "image/png") return null;
+      const ab = await blob.arrayBuffer();
+      const bytes = new Uint8Array(ab);
+
+      // signature check
+      const sig = [137,80,78,71,13,10,26,10];
+      for (let i = 0; i < 8; i++) if (bytes[i] !== sig[i]) return null;
+
+      let off = 8;
+      while (off + 12 <= bytes.length) {
+        const len = (bytes[off]<<24) | (bytes[off+1]<<16) | (bytes[off+2]<<8) | bytes[off+3];
+        const type = String.fromCharCode(bytes[off+4],bytes[off+5],bytes[off+6],bytes[off+7]);
+        const dataStart = off + 8;
+        const dataEnd = dataStart + len;
+        const next = dataEnd + 4; // skip CRC
+
+        if (dataEnd > bytes.length) break;
+
+        if (type === 'tEXt') {
+          // parse keyword\0value
+          const data = bytes.subarray(dataStart, dataEnd);
+          const zero = data.indexOf(0);
+          if (zero > 0) {
+            const key = new TextDecoder().decode(data.subarray(0, zero));
+            const val = new TextDecoder().decode(data.subarray(zero + 1));
+            if (key === 'wplaceMeta') {
+              try { return JSON.parse(val); } catch {}
+            }
+          }
+        }
+        if (type === 'IEND') break;
+        off = next;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   function showConfirmModal(i18nKeyOrText) {
     const modal = $("#confirmModal");
     if (!modal) {
@@ -293,6 +417,29 @@
         </div>
       `;
 
+      // Intercept grid download to embed metadata
+      const a = card.querySelector(".gallery-actions a");
+      if (a) {
+        a.addEventListener("click", async (e) => {
+          e.preventDefault();
+
+          const name = item.name || `image_${item.id}`;
+          const tags = Array.isArray(item.tags) ? item.tags : [];
+          const collection = item.collection || "";
+
+          const metaBlob = await pngWithMeta(item.blob, { name, tags, collection });
+          const url = URL.createObjectURL(metaBlob);
+
+          const tmp = document.createElement("a");
+          tmp.href = url;
+          tmp.download = buildDownloadName({ ...item, blob: metaBlob }, `image_${item.id}`);
+          document.body.appendChild(tmp);
+          tmp.click();
+          tmp.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+        });
+      }
+
       card.addEventListener("click", (e) => {
         if (e.target.closest(".select-check")) return;
         openViewerById(item.id);
@@ -347,7 +494,16 @@
       return;
     }
     const zip = new JSZip();
-    images.forEach((item) => zip.file(`image_${item.id}.png`, item.blob));
+
+    for (const item of images) {
+      const name = item.name || `image_${item.id}`;
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      const collection = item.collection || "";
+      const blob = await pngWithMeta(item.blob, { name, tags, collection });
+      const ext = mimeToExt(blob.type || "") || "png";
+      zip.file(`${stripImageExt(name) || "image_" + item.id}.${ext}`, blob);
+    }
+
     const content = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(content);
     const a = document.createElement("a");
@@ -367,14 +523,24 @@
     const map = new Map(list.map(r => [r.id, r]));
     const zip = new JSZip();
     let added = 0;
+
     for (const id of selectedIds) {
       const it = map.get(id);
-      if (it) { zip.file(`image_${id}.png`, it.blob); added++; }
+      if (!it) continue;
+      const name = it.name || `image_${id}`;
+      const tags = Array.isArray(it.tags) ? it.tags : [];
+      const collection = it.collection || "";
+      const blob = await pngWithMeta(it.blob, { name, tags, collection });
+      const ext = mimeToExt(blob.type || "") || "png";
+      zip.file(`${stripImageExt(name) || "image_" + id}.${ext}`, blob);
+      added++;
     }
+
     if (!added) {
       showToast(t("noSelected", "No images selected."), "error");
       return;
     }
+
     const content = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(content);
     const a = document.createElement("a");
@@ -383,11 +549,30 @@
     a.click();
     URL.revokeObjectURL(url);
     showToast(t("exportedSelected", "Exported selected images"), "success");
-  }
+}
 
   async function importGallery(files) {
     if (!files.length) return;
     const newRecords = [];
+
+    // small helper: infer proper MIME from filename
+    const guessType = (name) => {
+      const n = name.toLowerCase();
+      if (n.endsWith(".png"))  return "image/png";
+      if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+      if (n.endsWith(".gif"))  return "image/gif";
+      if (n.endsWith(".webp")) return "image/webp";
+      return "";
+    };
+
+    // small helper: safely read our embedded meta if available
+    const tryReadMeta = async (blob) => {
+      try {
+        if (typeof readPngMeta === "function" && (blob.type === "image/png"))
+          return await readPngMeta(blob);
+      } catch {}
+      return null;
+    };
 
     for (const file of files) {
       if (file.name.toLowerCase().endsWith(".zip")) {
@@ -396,11 +581,33 @@
           const entry = zip.files[name];
           if (entry.dir) continue;
           if (!/\.(png|jpe?g|gif|webp)$/i.test(name)) continue;
-          const blob = await entry.async("blob");
-          newRecords.push({ blob, created: Date.now() });
+
+          // Ensure the blob has the right MIME (JSZip often returns a generic Blob)
+          const raw = await entry.async("blob");
+          const type = guessType(name) || raw.type || "";
+          const blob = type && raw.type !== type ? new Blob([raw], { type }) : raw;
+
+          // Read embedded meta if PNG
+          const meta = await tryReadMeta(blob);
+
+          const rec = { blob, created: Date.now() };
+          if (meta) {
+            if (meta.name) rec.name = meta.name;
+            if (Array.isArray(meta.tags)) rec.tags = meta.tags;
+            if (meta.collection) rec.collection = meta.collection;
+          }
+          newRecords.push(rec);
         }
       } else if (file.type.startsWith("image/")) {
-        newRecords.push({ blob: file, created: Date.now() });
+        // Direct image import
+        const meta = await tryReadMeta(file);
+        const rec = { blob: file, created: Date.now() };
+        if (meta) {
+          if (meta.name) rec.name = meta.name;
+          if (Array.isArray(meta.tags)) rec.tags = meta.tags;
+          if (meta.collection) rec.collection = meta.collection;
+        }
+        newRecords.push(rec);
       }
     }
 
@@ -569,6 +776,37 @@
     $("#viewerDelete")?.addEventListener("click", deleteFromViewer);
     $("#viewerSelect")?.addEventListener("click", toggleViewerSelect);
 
+    // metadata
+    const dlBtn = $("#viewerDownload");
+    if (dlBtn) {
+      dlBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (currentViewerId == null) return;
+
+        const item =
+          (Array.isArray(filteredImagesCache) && filteredImagesCache.find(x => x.id === currentViewerId)) ||
+          (Array.isArray(allImagesCache) && allImagesCache.find(x => x.id === currentViewerId));
+        if (!item) return;
+
+        const name = ($("#viewerName")?.value || item.name || `image_${currentViewerId}`).trim();
+        const rawTags = ($("#viewerTags")?.value ?? (Array.isArray(item.tags) ? item.tags.join(", ") : "")).trim();
+        const tags = rawTags ? rawTags.split(",").map(s => s.trim()).filter(Boolean) : [];
+        const collection = ($("#viewerCollection")?.value || item.collection || "").trim();
+
+        const metaBlob = await pngWithMeta(item.blob, { name, tags, collection });
+        const url = URL.createObjectURL(metaBlob);
+
+        // Use a temporary anchor to avoid re-triggering this handler
+        const tmp = document.createElement("a");
+        tmp.href = url;
+        tmp.download = buildDownloadName({ ...item, name, blob: metaBlob }, `image_${currentViewerId}`);
+        document.body.appendChild(tmp);
+        tmp.click();
+        tmp.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      });
+    }
+
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && !$("#confirmModal")?.hidden) return;
       if (e.key === "Escape") closeViewer();
@@ -597,25 +835,5 @@
     } catch (e) {
       console.error(e);
     }
-
-    (function setupMobileMenu(){
-      const burger   = document.querySelector('.nav-burger');
-      const menu     = document.getElementById('mobileMenu');
-      const backdrop = document.getElementById('menuBackdrop');
-      if (!burger || !menu || !backdrop) return;
-
-      let open = false;
-      function setOpen(v){
-        open = v;
-        burger.setAttribute('aria-expanded', String(v));
-        menu.classList.toggle('show', v);
-        backdrop.hidden = !v;
-      }
-
-      burger.addEventListener('click', () => setOpen(!open));
-      backdrop.addEventListener('click', () => setOpen(false));
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) setOpen(false); });
-      window.addEventListener('resize', () => { if (window.innerWidth >= 981 && open) setOpen(false); });
-    })();
   });
 })();
