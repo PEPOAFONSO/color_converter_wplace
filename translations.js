@@ -158,62 +158,69 @@ function navigateToLang(lang) {
     });
   }
 
-// Keep internal links carrying the language (?lang=xx)
+  // Keep internal links carrying the language (?lang=xx)
 function decorateLinks(root = document) {
+  // current language
   const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
-  const KNOWN_SET = new Set(KNOWN.map(k => k.toLowerCase()));
-  const parts = location.pathname.replace(/^\/+/, "").split("/");
 
-  // figure the repo name once from the current page
-  const currentRepo =
-    (!IS_LOCAL && parts[0] && !KNOWN_SET.has((parts[0] || "").toLowerCase()) && !/\.html?$/i.test(parts[0]))
-      ? parts[0]
-      : (!IS_LOCAL ? "color_converter_wplace" : "");
-  const basePrefix = currentRepo ? `/${currentRepo}` : "";
-  const repoLower = (currentRepo || "").toLowerCase();
+  // known languages (normalized)
+  const KNOWN_SET = new Set(KNOWN.map(k => k.toLowerCase()));
+
+  // detect optional repo base (e.g., /myrepo/...)
+  const parts = location.pathname.replace(/^\/+/, "").split("/");
+  let repoBase = "";
+  if (parts.length && !KNOWN_SET.has((parts[0] || "").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
+    repoBase = `/${parts[0]}`;
+  }
 
   root.querySelectorAll('a[data-keep-lang]').forEach(a => {
     const raw = a.getAttribute("href");
     if (!raw) return;
 
     let url;
-    try { url = new URL(raw, location.origin); } catch { return; }
+    try {
+      // build relative to the site root, never to the current page
+      url = new URL(raw, location.origin);
+    } catch {
+      return;
+    }
 
+    // strip leading language segment if present
     const segs = url.pathname.replace(/^\/+/, "").split("/");
-    const hrefFirstSeg = (segs[0] || "").toLowerCase();
+    const maybeRepo = (location.pathname.replace(/^\/+/, "").split("/")[0] || "");
+    const hrefFirstSeg = (segs[0] || "");
 
-    // per-link prefix (don’t mutate global state)
-    let prefix = basePrefix;
-
-    // if the href already includes the repo, don’t add it again
-    if (hrefFirstSeg === repoLower) prefix = "";
-
-    // strip a leading language segment if present
+    // If href already begins with the repo segment, don't prefix again
+    if (repoBase && hrefFirstSeg.toLowerCase() === maybeRepo.toLowerCase()) {
+      repoBase = "";
+    }
     if (segs.length && KNOWN_SET.has((segs[0] || "").toLowerCase())) segs.shift();
 
     const filename = segs[segs.length - 1] || "";
 
     if (/^gallery\.html$/i.test(filename)) {
-      url.pathname = `${prefix}/gallery.html`;
-      url.search   = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+      url.pathname = `${repoBase}/gallery.html`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
     } else if (/^studio\.html$/i.test(filename)) {
-      url.pathname = `${prefix}/studio.html`;
-      url.search   = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+      url.pathname = `${repoBase}/studio.html`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
     } else if (!filename || /^index\.html$/i.test(filename)) {
       url.pathname = lang.toLowerCase() === "en"
-        ? `${prefix}/index.html`
-        : `${prefix}/${lang}/index.html`;
+        ? `${repoBase}/index.html`
+        : `${repoBase}/${lang}/index.html`;
       url.search = "";
     } else {
-      url.pathname = `${prefix}/${segs.join("/")}`;
-      url.search   = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+      url.pathname = `${repoBase}/${segs.join("/")}`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
     }
 
-    url.pathname = url.pathname.replace(/\.html\/+$/i, ".html"); // safety
+    // safety: no ".html/" endings
+    url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
+
+    // write an ABSOLUTE url (keeps origin so new-tab works)
     a.setAttribute("href", url.toString());
   });
 }
-
 
 function initLang() {
   // Priority: ?lang → folder → saved → browser → 'en'
