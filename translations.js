@@ -188,6 +188,13 @@ function decorateLinks(root = document) {
 
     // strip leading language segment if present
     const segs = url.pathname.replace(/^\/+/, "").split("/");
+    const maybeRepo = (location.pathname.replace(/^\/+/, "").split("/")[0] || "");
+    const hrefFirstSeg = (segs[0] || "");
+
+    // If href already begins with the repo segment, don't prefix again
+    if (repoBase && hrefFirstSeg.toLowerCase() === maybeRepo.toLowerCase()) {
+      repoBase = "";
+    }
     if (segs.length && KNOWN_SET.has((segs[0] || "").toLowerCase())) segs.shift();
 
     const filename = segs[segs.length - 1] || "";
