@@ -1137,7 +1137,7 @@ body.hide-ui-off .btn-eye { display: none !important; }
 .viewer-nav{ position:absolute; top:50%; transform:translateY(-50%); border:0; background:#222; color:#fff; width:40px; height:40px; border-radius:50%; }
 .viewer-nav.prev{ left:10px; } .viewer-nav.next{ right:10px; }
 
-#viewerImg{ width:100%; height:calc(92vh - 120px); object-fit:contain; background:#0d0f12; border-radius:10px; }
+#viewerImg{ width:100%; height:calc(92vh - 120px); object-fit:contain; background:#0d0f12; border-radius:10px; image-rendering: pixelated; }
 .viewer-meta{ display:grid; gap:10px; }
 .viewer-meta .input{ background:#1c1f26; color:#fff; border:1px solid var(--border); border-radius:8px; padding:10px; }
 .viewer-actions{ display:flex; gap:8px; flex-wrap:wrap; }
