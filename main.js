@@ -937,7 +937,6 @@ function updateEyeForButton(btn) {
   const hidden = key ? hiddenColors.has(key) : false;
   if (eye) {
     eye.classList.toggle('is-off', hidden);
-    eye.title = hidden ? 'Show color' : 'Hide color';
   }
   btn.classList.toggle('color-hidden', hidden);
 }
@@ -949,7 +948,6 @@ function augmentColorChipsWithEye() {
       const eye = document.createElement('button');
       eye.type = 'button';
       eye.className = 'hide-eye';
-      eye.title = 'Hide color';
       eye.addEventListener('click', (e) => {
         e.stopPropagation();
         const key = rgbKeyFromButton(btn);
@@ -1666,27 +1664,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         showToast(t.imageSaved || "Added to gallery!", "success");
 
-        // Redirect to gallery after a brief pause
-        setTimeout(() => {
-          const lang = (typeof getCurrentLang === "function" ? getCurrentLang() : "en");
-
-          // compute repo base (e.g., "/color_converter_wplace" on GitHub Pages)
-          const parts = window.location.pathname.replace(/^\/+/, "").split("/");
-          const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
-          let repo = "";
-          if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
-            repo = `/${parts[0]}`;
-          }
-
-          // gallery lives at root, never under a locale folder
-          const base = repo;                       // "" or "/<repo>"
-          const target =
-            lang.toLowerCase() === "en"
-              ? `${base}/gallery.html`
-              : `${base}/gallery.html?lang=${lang}`;
-
-          window.location.href = target;
-        }, 700);
       } catch (err) {
         console.error(err);
         let msg = t.saveFailed || "Failed to save image.";
