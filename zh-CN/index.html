@@ -38,17 +38,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../main.css" />
 </head>
-<body>
+<body class="home">
+  <div id="global-toast"></div>
   <!-- Header / Nav -->
   <header class="site-header">
     <div class="container header-inner">
+      <!-- Backdrop + dropdown menu (mobile) -->
+      <div id="menuBackdrop" class="menu-backdrop" hidden></div>
+      <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
+        <nav class="mobile-menu-inner" aria-label="Mobile">
+          <a class="menu-item" href="../studio.html" data-keep-lang>工作室</a>
+          <a class="menu-item" href="../gallery.html" data-keep-lang>画廊</a>
+          <!--<hr class="menu-sep" />-->
+        </nav>
+      </div>
       <a class="brand" href="/">
         <img src="../favicon.png" alt="" class="brand-mark" />
         <span class="brand-name">Wplace 色彩转换器</span>
       </a>
 
       <nav class="primary-nav" aria-label="Primary">
-
+      <a class="nav-link" href="../studio.html" data-keep-lang>工作室</a>
+      <a class="nav-link" href="../gallery.html" data-keep-lang>画廊</a>
       </nav>
 
       <div class="nav-tools">
@@ -112,7 +123,7 @@
           </div>
           <div class="dimension-input">
             <label>面积</label>
-            <div class="area-box" id="area"></div>
+            <input type="number" id="area" readonly>
           </div>
         </div>
         <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
@@ -324,16 +335,6 @@
   <script>
     // Footer year
     document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));
-    // Mobile burger
-    const burger = document.querySelector('.nav-burger');
-    const nav = document.querySelector('.primary-nav');
-    if (burger && nav) {
-      burger.addEventListener('click', () => {
-        const open = nav.style.display === 'flex';
-        nav.style.display = open ? 'none' : 'flex';
-        burger.setAttribute('aria-expanded', String(!open));
-      });
-    }
   </script>
 </body>
 </html>
