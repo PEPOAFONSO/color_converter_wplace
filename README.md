@@ -29,6 +29,7 @@ Convert the colors of your images, pixel art or any creation to the available in
 - Original code Created by [PONTOGAMER](https://github.com/PONTOGAMER)
 - Adaptation to website: [ATLAS](https://github.com/martimcabral)
 - Contributor: [Autergame](https://github.com/autergame)
+- Color cost display: [derpmagician](https://github.com/derpmagician)
 - Motivational helper: [kromck](https://github.com/kromck)
 
 ### Translations:
