@@ -718,6 +718,8 @@ function showColorUsage(colorCounts = {}, order = 'original') {
       label.appendChild(eyeIcon);
     } else {
       label.textContent = `${name}: ${count} px`;
+
+      
       // Differentiate Paid colors
       const isPaid = (typeof paidColors !== 'undefined') && paidColors.has(key);
       if (isPaid) label.style.color = 'gold';
