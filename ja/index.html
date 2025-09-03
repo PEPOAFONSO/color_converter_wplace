@@ -175,7 +175,7 @@
 
   <section class="panel panel-colors">
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div class="colors-card-head">
         <p class="section-title">無料の色</p>
         <button id="hide-toggle-free" class="btn-eye" title="すべての無料の色を隠す"></button>
       </div>
@@ -220,9 +220,12 @@
     </div>
 
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-        <p class="section-title">有料の色 (各2000💧)</p>
-        <button id="hide-toggle-paid" class="btn-eye" title="すべての有料の色を隠す"></button>
+      <div class="colors-card-head">
+        <div class="head-left">
+          <span class="section-title">有料の色</span>
+          <span class="section-title" id="paid-total-cost"></span>
+        </div>
+        <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
       </div>
       <button class="btn" data-type="paid" id="select-all-paid">
         すべての💧有料の色を選択

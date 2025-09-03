@@ -194,8 +194,7 @@
     <section class="panel panel-colors">
 <!-- Free (left) -->
 <div class="card">
-
-  <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+  <div class="colors-card-head">
     <p class="section-title" data-i18n="freeColors">Free Colors</p>
     <button id="hide-toggle-free" class="btn-eye" title="Hide all free colors"></button>
   </div>
@@ -243,11 +242,14 @@
 
     <!-- Paid (right) -->
     <div class="card">
-     <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="paidColors">Paid Colors (2000💧each)</p>
-      <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
-    </div>
-      <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
+      <div class="colors-card-head">
+        <div class="head-left">
+          <span class="section-title">Paid Colors</span>
+          <span class="section-title" id="paid-total-cost"></span>
+        </div>
+        <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
+      </div>
+      <button class="btn" data-type="paid" id="select-all-paid">
         Select All 💧Paid Colors
       </button>
       <div id="colors-paid" class="chips">

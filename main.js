@@ -172,8 +172,28 @@ function updatePadraoFromActiveButtons() {
     if (rgb) padrao.push(rgb);
   });
 
+  // Update paid colors total cost
+  updatePaidColorsTotalCost();
+
   if (originalImage) {
     reprocessWithCurrentPalette();
+  }
+}
+
+// Update paid colors total cost
+function updatePaidColorsTotalCost() {
+  const activePaidButtons = document.querySelectorAll('#colors-paid .toggle-color.active');
+  const totalPaidColors = activePaidButtons.length;
+  const costPerColor = 2000;
+  const totalCost = totalPaidColors * costPerColor;
+
+  const costElement = document.getElementById('paid-total-cost');
+  if (costElement) {
+    if (totalPaidColors > 0) {
+      costElement.textContent = `(${totalCost.toLocaleString()}💧)`;
+    } else {
+      costElement.textContent = '';
+    }
   }
 }
 

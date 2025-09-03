@@ -174,7 +174,7 @@
 
   <section class="panel panel-colors">
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div class="colors-card-head">
         <p class="section-title">Couleurs gratuites</p>
         <button id="hide-toggle-free" class="btn-eye" title="Masquer toutes les couleurs gratuites"></button>
       </div>
@@ -219,9 +219,12 @@
     </div>
 
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-        <p class="section-title">Couleurs payantes (2000💧chacune)</p>
-        <button id="hide-toggle-paid" class="btn-eye" title="Masquer toutes les couleurs payantes"></button>
+      <div class="colors-card-head">
+        <div class="head-left">
+          <span class="section-title">Couleurs payantes</span>
+          <span class="section-title" id="paid-total-cost"></span>
+        </div>
+        <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
       </div>
       <button class="btn" data-type="paid" id="select-all-paid">
         Sélectionner toutes les couleurs 💧payantes
