@@ -86,8 +86,8 @@
           <label for="upload" class="upload-box">
             <div class="upload-icon">📤</div>
             <div class="upload-text">
-              <strong data-i18n="uploadStrong">上传图片</strong>
-              <span data-i18n="uploadSpan">点击, 粘贴或拖放</span>
+              <strong>上传图片</strong>
+              <span>点击, 粘贴或拖放</span>
             </div>
           </label>
         </div>
@@ -95,35 +95,34 @@
 
       <div class="card">
         <div class="scroll-bar">
-          <label for="scaleRange" data-i18n="scale">比例</label>
+          <label for="scaleRange">比例</label>
           <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
           <span id="scaleValue">1.00x</span>
         </div>
 
         <div class="dimensions">
           <div class="dimension-input">
-            <label for="widthInput" data-i18n="width">宽度</label>
+            <label for="widthInput">宽度</label>
             <input type="number" id="widthInput">
           </div>
           <div class="dimension-input">
-            <label for="heightInput" data-i18n="height">高度</label>
+            <label for="heightInput">高度</label>
             <input type="number" id="heightInput">
           </div>
           <div class="dimension-input">
-            <label data-i18n="area">面积</label>
+            <label>面积</label>
             <div class="area-box" id="area"></div>
           </div>
         </div>
         <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
-        <button data-i18n="ditherButton"
-                id="ditherButton" class="btn btn-toggle active">
+        <button id="ditherButton" class="btn btn-toggle active">
           抖动处理（推荐）
         </button> 
       </div>
       <!-- Advanced options -->
       <details id="adv-options" class="adv-card">
         <summary>
-          <span data-i18n="advancedOptions">高级选项</span>
+          <span>高级选项</span>
         </summary>
 
         <div class="adv-content">
@@ -131,8 +130,6 @@
           <button
             id="transparentButton"
             class="btn btn-toggle"
-            data-i18n="transparentButton"
-            data-i18n-title="transparentButtonTitle"
             type="button">
             隐藏半透明的像素
           </button>
@@ -141,7 +138,6 @@
           <button
             id="opt-toggle-hide-ui"
             class="btn btn-toggle"
-            data-i18n="hideEyeControls"
             type="button">
             显示颜色隐藏控件（眼睛）
           </button>
@@ -158,19 +154,19 @@
 
       <!-- visual separator + zoom -->
       <div class="scroll-bar">
-        <label for="zoomRange" data-i18n="zoom">缩放</label>
+        <label for="zoomRange">缩放</label>
         <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
         <span id="zoomValue">1.00x</span>
         </div>
         <div>
-        <small data-i18n="zoomHint" style="display:block; color:#888; font-size:0.85em;">
+        <small style="display:block; color:#888; font-size:0.85em;">
         Ctrl+鼠标滚轮来调整缩放大小
         </small>
       </div>
 
       <div class="actions">
-        <a id="download" class="btn" href="#" data-i18n="download">下载图片</a>
-        <button id="clipboard" class="btn" data-i18n="clipboard">复制到剪贴板</button>
+        <a id="download" class="btn" href="#">下载图片</a>
+        <button id="clipboard" class="btn">复制到剪贴板</button>
       </div>
     </div>
 
@@ -182,11 +178,11 @@
 <div class="card">
 
   <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-    <p class="section-title" data-i18n="freeColors">免费颜色</p>
+    <p class="section-title">免费颜色</p>
     <button id="hide-toggle-free" class="btn-eye" title="Hide all free colors"></button>
   </div>
 
-  <button class="btn" data-type="free" id="unselect-all-free" data-i18n="allButtonfreeUnselect">
+  <button class="btn" data-type="free" id="unselect-all-free">
     取消选择所有免费的颜色
   </button>
 
@@ -230,10 +226,10 @@
     <!-- Paid (right) -->
     <div class="card">
      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-      <p class="section-title" data-i18n="paidColors">付费颜色 (每种 2000💧)</p>
+      <p class="section-title">付费颜色 (每种 2000💧)</p>
       <button id="hide-toggle-paid" class="btn-eye" title="Hide all paid colors"></button>
     </div>
-      <button class="btn" data-type="paid" id="select-all-paid" data-i18n="allButtonpaidSelect">
+      <button class="btn" data-type="paid" id="select-all-paid">
         选择所有💧付费颜色
       </button>
       <div id="colors-paid" class="chips">
@@ -272,16 +268,34 @@
       </div>
     </div>
 
-    <!-- Color List -->
-    <div>
-      <p class="section-title" data-i18n="sort"></p>
-      <input type="radio" name="colors-list-order" id="original" value="original" checked>
-      <label for="original" data-i18n="sortOriginal"></label>
+      <div>
+        <p class="section-title">排序方式</p>
+        <input type="radio" name="colors-list-order" id="original" value="original" checked>
+        <label for="original">原始</label>
 
-      <input type="radio" name="colors-list-order" id="used" value="used">
-      <label for="used" data-i18n="sortCount"></label>
-    </div>
-    <div id="color-list" class="card span-2"></div>
+        <input type="radio" name="colors-list-order" id="used" value="used">
+        <label for="used">最常用</label>
+      </div>
+
+      <!-- Columns chooser / mode -->
+      <div>
+        <p class="section-title">列数</p>
+
+        <input type="radio" name="color-columns-mode" id="color-columns-dynamic" value="dynamic" checked>
+        <label for="color-columns-dynamic">动态</label>
+
+        <input type="radio" name="color-columns-mode" id="color-columns-manual" value="manual">
+        <label for="color-columns-manual">手动</label>
+        
+        <select style="margin-left: 8px;" id="color-columns-manual-count" aria-label="颜色列表列数">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+
+      <div id="color-list" class="card span-2"></div>
   </section>
 </main>
 
