@@ -15,6 +15,25 @@
   [51,57,65],[109,117,141],[179,185,209]
 */
 
+// One canonical source of truth for all colors, in UI order:
+const MASTER_PALETTE = [
+  // free
+  [0,0,0],[60,60,60],[120,120,120],[210,210,210],[255,255,255],
+  [96,0,24],[237,28,36],[255,127,39],[246,170,9],[249,221,59],[255,250,188],
+  [14,185,104],[19,230,123],[135,255,94],[12,129,110],[16,174,166],[19,225,190],
+  [96,247,242],[40,80,158],[64,147,228],[107,80,246],[153,177,251],
+  [120,12,153],[170,56,185],[224,159,249],[203,0,122],[236,31,128],[243,141,169],
+  [104,70,52],[149,104,42],[248,178,119],
+  // paid
+  [170,170,170],[165,14,30],[250,128,114],[228,92,26],[156,132,49],[197,173,49],
+  [232,212,95],[74,107,58],[90,148,74],[132,197,115],[15,121,159],[187,250,242],
+  [125,199,255],[77,49,184],[74,66,132],[122,113,196],[181,174,241],
+  [155,82,73],[209,128,120],[250,182,164],[219,164,99],[123,99,82],
+  [156,132,107],[214,181,148],[209,128,81],[255,197,165],[109,100,63],
+  [148,140,107],[205,197,158],[51,57,65],[109,117,141],[179,185,209]
+];
+
+
 // --- Color name mapping ---
 const colorNames = {
   "0,0,0": "Black",
@@ -118,6 +137,17 @@ const paidColors = new Set([
   "179,185,209",    // Light Slate
 ]);
 
+function bindChipsToPalette() {
+  const chips = Array.from(document.querySelectorAll('#colors-free .toggle-color, #colors-paid .toggle-color'));
+  chips.forEach((btn, i) => {
+    const rgb = MASTER_PALETTE[i];
+    if (!rgb) return;
+    btn.dataset.key = `${rgb[0]},${rgb[1]},${rgb[2]}`;
+  });
+}
+if (document.readyState !== 'loading') bindChipsToPalette();
+else document.addEventListener('DOMContentLoaded', bindChipsToPalette);
+
 // Utility: clamp zoom to a reasonable range
 const widthInput  = document.getElementById('widthInput');
 const heightInput = document.getElementById('heightInput');
@@ -125,21 +155,10 @@ const heightInput = document.getElementById('heightInput');
 let padrao = [];
 
 function rgbFromChip(btn) {
-  // 1) inline style (stable under Dark Reader)
-  let s = btn.style.backgroundColor;       // e.g. "rgb(249, 221, 59)"
-  if (s) {
-    const m = s.match(/(\d+)\D+(\d+)\D+(\d+)/);
-    if (m) return [ +m[1], +m[2], +m[3] ];
-  }
-  // 2) raw style attribute (extra safety)
-  s = btn.getAttribute('style') || '';
-  let m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-  if (m) return [ +m[1], +m[2], +m[3] ];
-  // 3) title attribute fallback: "Name: rgb(r, g, b)"
-  s = btn.getAttribute('title') || '';
-  m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-  if (m) return [ +m[1], +m[2], +m[3] ];
-  return null;
+  const key = btn?.dataset?.key;
+  if (!key) return null;
+  const parts = key.split(',').map(n => +n);
+  return (parts.length === 3 && parts.every(Number.isFinite)) ? parts : null;
 }
 
 function updatePadraoFromActiveButtons() {
@@ -148,18 +167,14 @@ function updatePadraoFromActiveButtons() {
     '#colors-free .toggle-color.active, #colors-paid .toggle-color.active'
   );
 
-  const idsToSave = [];
   activeButtons.forEach(btn => {
     const rgb = rgbFromChip(btn);
     if (rgb) padrao.push(rgb);
-    idsToSave.push(btn.id);
   });
-
-  localStorage.setItem('activeColors', JSON.stringify(idsToSave));
 
   // Update paid colors total cost
   updatePaidColorsTotalCost();
-
+  
   if (originalImage) {
     reprocessWithCurrentPalette();
   }
@@ -333,7 +348,7 @@ function finalizeToPalette() {
     processedCtx.drawImage(canvas, 0, 0);
   }
 
-  // clamp everything to your palette and zero RGB for transparent pixels
+  // clamp everything to palette and zero RGB for transparent pixels
   const pctx = processedCanvas.getContext('2d');
   const img  = pctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
   const d    = img.data;
@@ -366,7 +381,7 @@ let fileName = "";
     // setCurrentLang persists to localStorage, sets <html lang>, and decorates links
     window.setCurrentLang(q);
   } else if (window.initLang) {
-    // fall back to your normal init (reads localStorage / <html lang>)
+    // fall back to normal init (reads localStorage / <html lang>)
     window.initLang();
   }
   // apply translations right away
@@ -723,6 +738,8 @@ function showColorUsage(colorCounts = {}, order = 'original') {
       label.appendChild(eyeIcon);
     } else {
       label.textContent = `${name}: ${count} px`;
+
+      
       // Differentiate Paid colors
       const isPaid = (typeof paidColors !== 'undefined') && paidColors.has(key);
       if (isPaid) label.style.color = 'gold';
@@ -907,6 +924,8 @@ function showColorUsage(colorCounts = {}, order = 'original') {
 const hiddenColors = new Set();
 
 function rgbKeyFromButton(btn) {
+  if (btn?.dataset?.key) return btn.dataset.key; // <-- primary path
+  // fallback
   const bg = getComputedStyle(btn).backgroundColor;
   const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   return m ? `${+m[1]},${+m[2]},${+m[3]}` : null;
@@ -1453,7 +1472,6 @@ function isDitheringOn() {
   // Sync UI
   btn.classList.toggle('active', on);
 
-  // (Title comes from your localized HTML; no JS i18n here.)
 
   // Click handler
   btn.addEventListener('click', () => {
@@ -1461,17 +1479,11 @@ function isDitheringOn() {
     btn.classList.toggle('active', next);
     localStorage.setItem(DITHER_KEY, String(next));
 
-  if (originalImage) {
-    reprocessWithCurrentPalette();
-  }
-
+    if (originalImage) {
+      applyScale();
+      applyPreview();
+    }
   });
-
-  // Reprocess if active on load and image already present
-  if (on && originalImage) {
-    applyScale?.();
-    applyPreview?.();
-  }
 })();
 
 
@@ -1587,7 +1599,6 @@ document.addEventListener('DOMContentLoaded', () => {
     triggerRerender();
   });
 
-  // If you have sort radios, keep this so re-sorting re-renders
   document.querySelectorAll('input[name="colors-list-order"]').forEach(r => {
     r.addEventListener('change', () => {
       if (window._colorCounts) showColorUsage(window._colorCounts, getColorsListOrder());
@@ -1703,29 +1714,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ---------- Mobile Burger Menu ----------
-document.addEventListener("DOMContentLoaded", () => {
-  const burger   = document.querySelector(".nav-burger");
-  const menu     = document.getElementById("mobileMenu");
-  const backdrop = document.getElementById("menuBackdrop");
-  if (!burger || !menu || !backdrop) return;
-
-  let open = false;
-  function setOpen(v) {
-    open = v;
-    burger.setAttribute("aria-expanded", String(v));
-    menu.classList.toggle("show", v);
-    backdrop.hidden = !v;
-  }
-
-  burger.addEventListener("click", () => setOpen(!open));
-  backdrop.addEventListener("click", () => setOpen(false));
-
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && open) setOpen(false);
-  });
-
-  window.addEventListener("resize", () => {
-    if (window.innerWidth >= 981 && open) setOpen(false);
-  });
+document.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(() => updatePadraoFromActiveButtons());
 });

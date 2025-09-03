@@ -1,7 +1,7 @@
 // ---- Language runtime (with path + URL propagation) ----
 (function () {
   const LS_KEY = "lang";
-  const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr"];
+  const KNOWN = ["en","pt","de","es","fr","uk","vi","pl","ja","de-CH","nl","ru","tr","it","zh-CN"];
   const IS_LOCAL = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
   const matchLang = (s) => {
   const n = norm(s);
@@ -47,7 +47,7 @@
 }
 
 function safePage(p) {
-  return /^(index|gallery)\.html$/i.test(p || "") ? p : "index.html";
+  return /^(index|gallery|studio)\.html$/i.test(p || "") ? p : "index.html";
 }
 
 function setCurrentLang(lang) {
@@ -111,9 +111,12 @@ function targetForLang(lang) {
 
   const pg = safePage(page);
 
-  if (pg.toLowerCase() === "gallery.html") {
-    return use === "en" ? `${base}/gallery.html` : `${base}/gallery.html?lang=${use}`;
+  const file = pg.toLowerCase();
+  if (file === "gallery.html" || file === "studio.html") {
+  // Keep single file + ?lang=xx (same behavior across pages)
+  return use === "en" ? `${base}/${pg}` : `${base}/${pg}?lang=${use}`;
   }
+  // index.html keeps folder-style for non-EN
   return use === "en" ? `${base}/${pg}` : `${base}/${use}/${pg}`;
 }
 
@@ -156,66 +159,62 @@ function navigateToLang(lang) {
   }
 
   // Keep internal links carrying the language (?lang=xx)
+// Keep internal links carrying the language (?lang=xx)
 function decorateLinks(root = document) {
   // current language
   const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
 
   // known languages (normalized)
-  const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
+  const KNOWN_SET = new Set(KNOWN.map(k => k.toLowerCase()));
 
   // detect optional repo base (e.g., /myrepo/...)
   const parts = location.pathname.replace(/^\/+/, "").split("/");
   let repoBase = "";
-  if (parts.length && !KNOWN.has(parts[0].toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
+  if (parts.length && !KNOWN_SET.has((parts[0] || "").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
     repoBase = `/${parts[0]}`;
   }
 
-root.querySelectorAll('a[data-keep-lang]').forEach(a => {
-  const raw = a.getAttribute("href");
-  if (!raw) return;
+  root.querySelectorAll('a[data-keep-lang]').forEach(a => {
+    const raw = a.getAttribute("href");
+    if (!raw) return;
 
-  let url;
-  try { 
-    // build relative to the site root, never to the current page
-    url = new URL(raw, location.origin);
-  } catch { 
-    return; 
-  }
+    let url;
+    try {
+      // build relative to the site root, never to the current page
+      url = new URL(raw, location.origin);
+    } catch {
+      return;
+    }
 
-  const KNOWN = new Set(["en","pt","de","de-ch","es","fr","uk","vi","pl","ja","nl","ru","tr"]);
-  const segs = url.pathname.replace(/^\/+/, "").split("/");
-  if (segs.length && KNOWN.has(segs[0].toLowerCase())) segs.shift();
+    // strip leading language segment if present
+    const segs = url.pathname.replace(/^\/+/, "").split("/");
+    if (segs.length && KNOWN_SET.has((segs[0] || "").toLowerCase())) segs.shift();
 
-  const parts = location.pathname.replace(/^\/+/, "").split("/");
-  let repoBase = "";
-  if (parts.length && !KNOWN.has((parts[0]||"").toLowerCase()) && !/\.(html?)$/i.test(parts[0])) {
-    repoBase = `/${parts[0]}`;
-  }
+    const filename = segs[segs.length - 1] || "";
 
-  const lang = (typeof getCurrentLang === "function" && getCurrentLang()) || "en";
-  const filename = segs[segs.length - 1] || "";
+    if (/^gallery\.html$/i.test(filename)) {
+      url.pathname = `${repoBase}/gallery.html`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+    } else if (/^studio\.html$/i.test(filename)) {
+      url.pathname = `${repoBase}/studio.html`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+    } else if (!filename || /^index\.html$/i.test(filename)) {
+      url.pathname = lang.toLowerCase() === "en"
+        ? `${repoBase}/index.html`
+        : `${repoBase}/${lang}/index.html`;
+      url.search = "";
+    } else {
+      url.pathname = `${repoBase}/${segs.join("/")}`;
+      url.search = lang.toLowerCase() === "en" ? "" : `?lang=${lang}`;
+    }
 
-  if (/^gallery\.html$/i.test(filename)) {
-    url.pathname = `${repoBase}/gallery.html`;
-    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
-  } else if (!filename || /^index\.html$/i.test(filename)) {
-    url.pathname = lang.toLowerCase()==="en"
-      ? `${repoBase}/index.html`
-      : `${repoBase}/${lang}/index.html`;
-    url.search = "";
-  } else {
-    url.pathname = `${repoBase}/${segs.join("/")}`;
-    url.search = lang.toLowerCase()==="en" ? "" : `?lang=${lang}`;
-  }
+    // safety: no ".html/" endings
+    url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
 
-  // safety: no ".html/" endings
-  url.pathname = url.pathname.replace(/\.html\/+$/i, ".html");
-
-  // write an ABSOLUTE url (keeps origin so new-tab works)
-  a.setAttribute("href", url.toString());
-});
+    // write an ABSOLUTE url (keeps origin so new-tab works)
+    a.setAttribute("href", url.toString());
+  });
 }
-
 
 function initLang() {
   // Priority: ?lang → folder → saved → browser → 'en'
@@ -248,7 +247,7 @@ function initLang() {
     // second segment if path starts with lang (no repo) OR third if path is /repo/lang/...
     const idx = (parts[0] && matchLang(parts[0])) ? 1 : ((parts[1] && matchLang(parts[1])) ? 2 : -1);
     const file = idx >= 0 ? (parts[idx] || "").toLowerCase() : "";
-    const isKnown = file === "" || file === "index.html" || file === "gallery.html";
+    const isKnown = file === "" || file === "index.html" || file === "gallery.html" || file === "studio.html";
     if (firstIsLang && !isKnown) {
       window.location.replace(targetForLang(use));
       return;
@@ -348,6 +347,40 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collection",
+    studioPageTitle: "Studio – Wplace Color Converter",
+    studioTitle: "Studio",
+    genNotice: "Uses the public Pollinations image endpoint. Prompts may be logged publicly by that service. No account is required.",
+    paletteFree: "Free Colors",
+    palettePaid: "Paid Colors",
+    tools: "Tools",
+    toolPencil: "Pencil", toolPencilTitle: "Pencil (P)",
+    toolBrush: "Brush", toolBrushTitle: "Brush (H)",
+    toolEraser: "Eraser", toolEraserTitle: "Eraser (E)",
+    toolPicker: "Pick", toolPickerTitle: "Eyedropper (I)",
+    toolFill: "Fill", toolFillTitle: "Fill (B)",
+    toolLine: "Line", toolLineTitle: "Line (L)",
+    toolRect: "Rect", toolRectTitle: "Rectangle (R)",
+    toolRectF: "Rect+", toolRectFTitle: "Filled Rectangle (Shift+R)",
+    toolCirc: "Circle", toolCircTitle: "Ellipse/Circle (O)",
+    toolCircF: "Circle+", toolCircFTitle: "Filled Ellipse (Shift+O)",
+    undo: "Undo", undoTitle: "Undo (Ctrl+Z)",
+    redo: "Redo", redoTitle: "Redo (Ctrl+Y)",
+    clear: "Clear",
+    gridSize: "Grid Size",
+    zoom: "Zoom",
+    showGrid: "Show grid",
+    genPlaceholder: "e.g., retro 8-bit spaceship sprite facing right, transparent background",
+    generate: "Generate",
+    uploadImage: "Upload Image",
+    hideGrid: "Hide grid",
+    customCursors: "Custom Cursors",
+    imageNotFound: "Image not found.",
+    imageSaved: "Added to gallery!",
+    saveFailed: "Failed to save image.",
+    storageFull: "Your browser storage is full. Remove some items from the gallery and try again.",
+    copied: "Copied to clipboard!",
+    cleared: "Canvas cleared.",
+    nothingSelected: "Nothing selected."
   },
   pt: {
     galleryPageTitle: "A Minha Galeria – Wplace Color Converter",
@@ -393,6 +426,40 @@ window.translations = {
     viewerNamePlaceholder: "Nome…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Coleção",
+    studioPageTitle: "Estúdio – Wplace Conversor de Cores",
+    studioTitle: "Estúdio",
+    genNotice: "Usa o serviço público de imagens Pollinations. Os prompts podem ser registados publicamente por esse serviço. Não é necessária conta.",
+    paletteFree: "Cores Gratuitas",
+    palettePaid: "Cores Pagas",
+    tools: "Ferramentas",
+    toolPencil: "Lápis", toolPencilTitle: "Lápis (P)",
+    toolBrush: "Pincel", toolBrushTitle: "Pincel (H)",
+    toolEraser: "Borracha", toolEraserTitle: "Borracha (E)",
+    toolPicker: "Conta-gotas", toolPickerTitle: "Conta-gotas (I)",
+    toolFill: "Preencher", toolFillTitle: "Preencher (B)",
+    toolLine: "Linha", toolLineTitle: "Linha (L)",
+    toolRect: "Retângulo", toolRectTitle: "Retângulo (R)",
+    toolRectF: "Retângulo+", toolRectFTitle: "Retângulo preenchido (Shift+R)",
+    toolCirc: "Círculo", toolCircTitle: "Elipse/Círculo (O)",
+    toolCircF: "Círculo+", toolCircFTitle: "Elipse preenchida (Shift+O)",
+    undo: "Desfazer", undoTitle: "Desfazer (Ctrl+Z)",
+    redo: "Refazer", redoTitle: "Refazer (Ctrl+Y)",
+    clear: "Limpar",
+    gridSize: "Tamanho da grelha",
+    zoom: "Zoom",
+    showGrid: "Mostrar grelha",
+    genPlaceholder: "ex.: nave retro 8-bits virada à direita, fundo transparente",
+    generate: "Gerar",
+    uploadImage: "Carregar imagem",
+    hideGrid: "Ocultar grelha",
+    customCursors: "Cursores personalizados",
+    imageNotFound: "Imagem não encontrada.",
+    imageSaved: "Adicionado à galeria!",
+    saveFailed: "Falha ao guardar a imagem.",
+    storageFull: "O armazenamento do navegador está cheio. Remova alguns itens da galeria e tente novamente.",
+    copied: "Copiado para a área de transferência!",
+    cleared: "Tela limpa.",
+    nothingSelected: "Nada selecionado."
   },
   de: {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -438,6 +505,40 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    studioPageTitle: "Studio – Wplace Farbkonverter",
+    studioTitle: "Studio",
+    genNotice: "Verwendet den öffentlichen Pollinations-Bilddienst. Prompts können dort öffentlich protokolliert werden. Kein Konto erforderlich.",
+    paletteFree: "Kostenlose Farben",
+    palettePaid: "Bezahlte Farben",
+    tools: "Werkzeuge",
+    toolPencil: "Stift", toolPencilTitle: "Stift (P)",
+    toolBrush: "Pinsel", toolBrushTitle: "Pinsel (H)",
+    toolEraser: "Radierer", toolEraserTitle: "Radierer (E)",
+    toolPicker: "Pipette", toolPickerTitle: "Pipette (I)",
+    toolFill: "Füllen", toolFillTitle: "Füllen (B)",
+    toolLine: "Linie", toolLineTitle: "Linie (L)",
+    toolRect: "Rechteck", toolRectTitle: "Rechteck (R)",
+    toolRectF: "Rechteck+", toolRectFTitle: "Gefülltes Rechteck (Shift+R)",
+    toolCirc: "Kreis", toolCircTitle: "Ellipse/Kreis (O)",
+    toolCircF: "Kreis+", toolCircFTitle: "Gefüllte Ellipse (Shift+O)",
+    undo: "Rückgängig", undoTitle: "Rückgängig (Ctrl+Z)",
+    redo: "Wiederholen", redoTitle: "Wiederholen (Ctrl+Y)",
+    clear: "Leeren",
+    gridSize: "Rastergröße",
+    zoom: "Zoom",
+    showGrid: "Raster anzeigen",
+    genPlaceholder: "z. B. Retro-8-Bit-Raumschiff nach rechts, transparenter Hintergrund",
+    generate: "Generieren",
+    uploadImage: "Bild hochladen",
+    hideGrid: "Raster ausblenden",
+    customCursors: "Benutzerdefinierte Cursor",
+    imageNotFound: "Bild nicht gefunden.",
+    imageSaved: "Zur Galerie hinzugefügt!",
+    saveFailed: "Bild konnte nicht gespeichert werden.",
+    storageFull: "Der Browserspeicher ist voll. Entferne einige Elemente aus der Galerie und versuche es erneut.",
+    copied: "In die Zwischenablage kopiert!",
+    cleared: "Leinwand gelöscht.",
+    nothingSelected: "Nichts ausgewählt."
   },
   "de-CH": {
     galleryPageTitle: "Meine Galerie – Wplace Color Converter",
@@ -483,6 +584,40 @@ window.translations = {
     viewerNamePlaceholder: "Name…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Sammlung",
+    studioPageTitle: "Studio – Wplace Farbkonverter",
+    studioTitle: "Studio",
+    genNotice: "Verwendet den öffentlichen Pollinations-Bilddienst. Prompts können dort öffentlich protokolliert werden. Kein Konto erforderlich.",
+    paletteFree: "Kostenlose Farben",
+    palettePaid: "Bezahlte Farben",
+    tools: "Werkzeuge",
+    toolPencil: "Stift", toolPencilTitle: "Stift (P)",
+    toolBrush: "Pinsel", toolBrushTitle: "Pinsel (H)",
+    toolEraser: "Radierer", toolEraserTitle: "Radierer (E)",
+    toolPicker: "Pipette", toolPickerTitle: "Pipette (I)",
+    toolFill: "Füllen", toolFillTitle: "Füllen (B)",
+    toolLine: "Linie", toolLineTitle: "Linie (L)",
+    toolRect: "Rechteck", toolRectTitle: "Rechteck (R)",
+    toolRectF: "Rechteck+", toolRectFTitle: "Gefülltes Rechteck (Shift+R)",
+    toolCirc: "Kreis", toolCircTitle: "Ellipse/Kreis (O)",
+    toolCircF: "Kreis+", toolCircFTitle: "Gefüllte Ellipse (Shift+O)",
+    undo: "Rückgängig", undoTitle: "Rückgängig (Ctrl+Z)",
+    redo: "Wiederholen", redoTitle: "Wiederholen (Ctrl+Y)",
+    clear: "Leeren",
+    gridSize: "Rastergröße",
+    zoom: "Zoom",
+    showGrid: "Raster anzeigen",
+    genPlaceholder: "z. B. Retro-8-Bit-Raumschiff nach rechts, transparenter Hintergrund",
+    generate: "Generieren",
+    uploadImage: "Bild hochladen",
+    hideGrid: "Raster ausblenden",
+    customCursors: "Benutzerdefinierte Cursor",
+    imageNotFound: "Bild nicht gefunden.",
+    imageSaved: "Zur Galerie hinzugefügt!",
+    saveFailed: "Bild konnte nicht gespeichert werden.",
+    storageFull: "Der Browserspeicher ist voll. Entferne einige Elemente aus der Galerie und versuche es erneut.",
+    copied: "In die Zwischenablage kopiert!",
+    cleared: "Leinwand gelöscht.",
+    nothingSelected: "Nichts ausgewählt."
   },
   es: {
     galleryPageTitle: "Mi Galería – Wplace Color Converter",
@@ -528,6 +663,41 @@ window.translations = {
     viewerNamePlaceholder: "Nombre…",
     viewerTagsPlaceholder: "Etiquetas…",
     viewerCollectionPlaceholder: "Colección",
+    studioPageTitle: "Estudio – Wplace Convertidor de Colores",
+    studioTitle: "Estudio",
+    genNotice: "Usa el servicio público de imágenes Pollinations. Los prompts pueden registrarse públicamente en ese servicio. No se requiere cuenta.",
+    paletteFree: "Colores gratis",
+    palettePaid: "Colores de pago",
+    tools: "Herramientas",
+    toolPencil: "Lápiz", toolPencilTitle: "Lápiz (P)",
+    toolBrush: "Pincel", toolBrushTitle: "Pincel (H)",
+    toolEraser: "Borrador", toolEraserTitle: "Borrador (E)",
+    toolPicker: "Cuentagotas", toolPickerTitle: "Cuentagotas (I)",
+    toolFill: "Rellenar", toolFillTitle: "Rellenar (B)",
+    toolLine: "Línea", toolLineTitle: "Línea (L)",
+    toolRect: "Rectángulo", toolRectTitle: "Rectángulo (R)",
+    toolRectF: "Rectángulo+", toolRectFTitle: "Rectángulo relleno (Shift+R)",
+    toolCirc: "Círculo", toolCircTitle: "Elipse/Círculo (O)",
+    toolCircF: "Círculo+", toolCircFTitle: "Elipse rellena (Shift+O)",
+    undo: "Deshacer", undoTitle: "Deshacer (Ctrl+Z)",
+    redo: "Rehacer", redoTitle: "Rehacer (Ctrl+Y)",
+    clear: "Limpiar",
+    gridSize: "Tamaño de cuadrícula",
+    zoom: "Zoom",
+    showGrid: "Mostrar cuadrícula",
+    genPlaceholder: "ej.: nave retro de 8 bits mirando a la derecha, fondo transparente",
+    generate: "Generar",
+    uploadImage: "Subir imagen",
+    hideGrid: "Ocultar cuadrícula",
+    customCursors: "Cursores personalizados",
+    imageNotFound: "Imagen no encontrada.",
+    imageSaved: "¡Añadido a la galería!",
+    saveFailed: "Error al guardar la imagen.",
+    storageFull: "El almacenamiento del navegador está lleno. Elimina elementos de la galería e inténtalo de nuevo.",
+    copied: "¡Copiado al portapapeles!",
+    cleared: "Lienzo borrado.",
+    nothingSelected: "Nada seleccionado."
+
   },
   fr: {
     galleryPageTitle: "Ma Galerie – Wplace Color Converter",
@@ -573,6 +743,40 @@ window.translations = {
     viewerNamePlaceholder: "Nom…",
     viewerTagsPlaceholder: "Étiquettes…",
     viewerCollectionPlaceholder: "Collection",
+    studioPageTitle: "Studio – Wplace Convertisseur de Couleurs",
+    studioTitle: "Studio",
+    genNotice: "Utilise le service public d’images Pollinations. Les prompts peuvent être enregistrés publiquement par ce service. Aucun compte requis.",
+    paletteFree: "Couleurs gratuites",
+    palettePaid: "Couleurs payantes",
+    tools: "Outils",
+    toolPencil: "Crayon", toolPencilTitle: "Crayon (P)",
+    toolBrush: "Pinceau", toolBrushTitle: "Pinceau (H)",
+    toolEraser: "Gomme", toolEraserTitle: "Gomme (E)",
+    toolPicker: "Pipette", toolPickerTitle: "Pipette (I)",
+    toolFill: "Remplir", toolFillTitle: "Remplir (B)",
+    toolLine: "Ligne", toolLineTitle: "Ligne (L)",
+    toolRect: "Rectangle", toolRectTitle: "Rectangle (R)",
+    toolRectF: "Rectangle+", toolRectFTitle: "Rectangle plein (Shift+R)",
+    toolCirc: "Cercle", toolCircTitle: "Ellipse/Cercle (O)",
+    toolCircF: "Cercle+", toolCircFTitle: "Ellipse pleine (Shift+O)",
+    undo: "Annuler", undoTitle: "Annuler (Ctrl+Z)",
+    redo: "Rétablir", redoTitle: "Rétablir (Ctrl+Y)",
+    clear: "Effacer",
+    gridSize: "Taille de la grille",
+    zoom: "Zoom",
+    showGrid: "Afficher la grille",
+    genPlaceholder: "ex. : vaisseau rétro 8 bits tourné à droite, fond transparent",
+    generate: "Générer",
+    uploadImage: "Importer une image",
+    hideGrid: "Masquer la grille",
+    customCursors: "Curseurs personnalisés",
+    imageNotFound: "Image non trouvée.",
+    imageSaved: "Ajouté à la galerie !",
+    saveFailed: "Échec de l’enregistrement de l’image.",
+    storageFull: "Le stockage du navigateur est plein. Supprimez des éléments de la galerie et réessayez.",
+    copied: "Copié dans le presse-papiers !",
+    cleared: "Toile effacée.",
+    nothingSelected: "Rien sélectionné."
   },
   uk: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -618,6 +822,40 @@ window.translations = {
     viewerNamePlaceholder: "Ім’я…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Колекція",
+    studioPageTitle: "Студія – Wplace Конвертер кольорів",
+    studioTitle: "Студія",
+    genNotice: "Використовує публічний сервіс зображень Pollinations. Промпти можуть зберігатися публічно цим сервісом. Обліковий запис не потрібен.",
+    paletteFree: "Безкоштовні кольори",
+    palettePaid: "Платні кольори",
+    tools: "Інструменти",
+    toolPencil: "Олівець", toolPencilTitle: "Олівець (P)",
+    toolBrush: "Пензель", toolBrushTitle: "Пензель (H)",
+    toolEraser: "Гумка", toolEraserTitle: "Гумка (E)",
+    toolPicker: "Піпетка", toolPickerTitle: "Піпетка (I)",
+    toolFill: "Заливка", toolFillTitle: "Заливка (B)",
+    toolLine: "Лінія", toolLineTitle: "Лінія (L)",
+    toolRect: "Прямокутник", toolRectTitle: "Прямокутник (R)",
+    toolRectF: "Прямокутник+", toolRectFTitle: "Заповнений прямокутник (Shift+R)",
+    toolCirc: "Коло", toolCircTitle: "Еліпс/Коло (O)",
+    toolCircF: "Коло+", toolCircFTitle: "Заповнений еліпс (Shift+O)",
+    undo: "Скасувати", undoTitle: "Скасувати (Ctrl+Z)",
+    redo: "Повторити", redoTitle: "Повторити (Ctrl+Y)",
+    clear: "Очистити",
+    gridSize: "Розмір сітки",
+    zoom: "Масштаб",
+    showGrid: "Показати сітку",
+    genPlaceholder: "наприклад: ретро 8-бітний космічний корабель праворуч, прозорий фон",
+    generate: "Згенерувати",
+    uploadImage: "Завантажити зображення",
+    hideGrid: "Приховати сітку",
+    customCursors: "Користувацькі курсори",
+    imageNotFound: "Зображення не знайдено.",
+    imageSaved: "Додано до галереї!",
+    saveFailed: "Не вдалося зберегти зображення.",
+    storageFull: "Пам’ять браузера заповнена. Видаліть деякі елементи з галереї та спробуйте ще раз.",
+    copied: "Скопійовано в буфер обміну!",
+    cleared: "Полотно очищено.",
+    nothingSelected: "Нічого не вибрано."
   },
   vi: {
     galleryPageTitle: "Thư viện của tôi – Wplace Color Converter",
@@ -663,6 +901,40 @@ window.translations = {
     viewerNamePlaceholder: "Tên…",
     viewerTagsPlaceholder: "Thẻ…",
     viewerCollectionPlaceholder: "Bộ sưu tập",
+    studioPageTitle: "Studio – Wplace Trình Chuyển Đổi Màu",
+    studioTitle: "Studio",
+    genNotice: "Sử dụng dịch vụ hình ảnh công khai Pollinations. Prompt có thể được lưu công khai bởi dịch vụ này. Không cần tài khoản.",
+    paletteFree: "Màu miễn phí",
+    palettePaid: "Màu trả phí",
+    tools: "Công cụ",
+    toolPencil: "Bút chì", toolPencilTitle: "Bút chì (P)",
+    toolBrush: "Cọ vẽ", toolBrushTitle: "Cọ vẽ (H)",
+    toolEraser: "Tẩy", toolEraserTitle: "Tẩy (E)",
+    toolPicker: "Chọn màu", toolPickerTitle: "Ống nhỏ giọt (I)",
+    toolFill: "Tô màu", toolFillTitle: "Tô màu (B)",
+    toolLine: "Đường", toolLineTitle: "Đường (L)",
+    toolRect: "Hình chữ nhật", toolRectTitle: "Hình chữ nhật (R)",
+    toolRectF: "Hình chữ nhật+", toolRectFTitle: "Hình chữ nhật tô màu (Shift+R)",
+    toolCirc: "Hình tròn", toolCircTitle: "Hình elip/tròn (O)",
+    toolCircF: "Hình tròn+", toolCircFTitle: "Hình elip tô màu (Shift+O)",
+    undo: "Hoàn tác", undoTitle: "Hoàn tác (Ctrl+Z)",
+    redo: "Làm lại", redoTitle: "Làm lại (Ctrl+Y)",
+    clear: "Xóa",
+    gridSize: "Kích thước lưới",
+    zoom: "Thu phóng",
+    showGrid: "Hiện lưới",
+    genPlaceholder: "ví dụ: tàu vũ trụ retro 8-bit nhìn sang phải, nền trong suốt",
+    generate: "Tạo",
+    uploadImage: "Tải ảnh lên",
+    hideGrid: "Ẩn lưới",
+    customCursors: "Con trỏ tùy chỉnh",
+    imageNotFound: "Không tìm thấy hình ảnh.",
+    imageSaved: "Đã thêm vào thư viện!",
+    saveFailed: "Lưu hình ảnh thất bại.",
+    storageFull: "Bộ nhớ trình duyệt đã đầy. Hãy xóa bớt một số mục trong thư viện và thử lại.",
+    copied: "Đã sao chép vào bộ nhớ tạm!",
+    cleared: "Đã xóa canvas.",
+    nothingSelected: "Chưa chọn gì."
   },
   pl: {
     galleryPageTitle: "Moja Galeria – Wplace Color Converter",
@@ -708,6 +980,40 @@ window.translations = {
     viewerNamePlaceholder: "Nazwa…",
     viewerTagsPlaceholder: "Tagi…",
     viewerCollectionPlaceholder: "Kolekcja",
+    studioPageTitle: "Studio – Wplace Konwerter Kolorów",
+    studioTitle: "Studio",
+    genNotice: "Korzysta z publicznego serwisu obrazów Pollinations. Prompty mogą być publicznie rejestrowane przez ten serwis. Konto nie jest wymagane.",
+    paletteFree: "Darmowe kolory",
+    palettePaid: "Płatne kolory",
+    tools: "Narzędzia",
+    toolPencil: "Ołówek", toolPencilTitle: "Ołówek (P)",
+    toolBrush: "Pędzel", toolBrushTitle: "Pędzel (H)",
+    toolEraser: "Gumka", toolEraserTitle: "Gumka (E)",
+    toolPicker: "Pipeta", toolPickerTitle: "Pipeta (I)",
+    toolFill: "Wypełnij", toolFillTitle: "Wypełnij (B)",
+    toolLine: "Linia", toolLineTitle: "Linia (L)",
+    toolRect: "Prostokąt", toolRectTitle: "Prostokąt (R)",
+    toolRectF: "Prostokąt+", toolRectFTitle: "Wypełniony prostokąt (Shift+R)",
+    toolCirc: "Koło", toolCircTitle: "Elipsa/Koło (O)",
+    toolCircF: "Koło+", toolCircFTitle: "Wypełniona elipsa (Shift+O)",
+    undo: "Cofnij", undoTitle: "Cofnij (Ctrl+Z)",
+    redo: "Ponów", redoTitle: "Ponów (Ctrl+Y)",
+    clear: "Wyczyść",
+    gridSize: "Rozmiar siatki",
+    zoom: "Powiększenie",
+    showGrid: "Pokaż siatkę",
+    genPlaceholder: "np.: retro statek kosmiczny 8-bit skierowany w prawo, przezroczyste tło",
+    generate: "Generuj",
+    uploadImage: "Prześlij obraz",
+    hideGrid: "Ukryj siatkę",
+    customCursors: "Własne kursory",
+    imageNotFound: "Nie znaleziono obrazu.",
+    imageSaved: "Dodano do galerii!",
+    saveFailed: "Nie udało się zapisać obrazu.",
+    storageFull: "Pamięć przeglądarki jest pełna. Usuń niektóre elementy z galerii i spróbuj ponownie.",
+    copied: "Skopiowano do schowka!",
+    cleared: "Płótno wyczyszczone.",
+    nothingSelected: "Nic nie zaznaczono."
   },
   ja: {
     galleryPageTitle: "マイギャラリー – Wplace Color Converter",
@@ -753,6 +1059,40 @@ window.translations = {
     viewerNamePlaceholder: "名前…",
     viewerTagsPlaceholder: "タグ…",
     viewerCollectionPlaceholder: "コレクション",
+    studioPageTitle: "スタジオ – Wplace カラーコンバーター",
+    studioTitle: "スタジオ",
+    genNotice: "公開の Pollinations 画像サービスを使用します。プロンプトはそのサービスによって公開ログに記録される可能性があります。アカウントは不要です。",
+    paletteFree: "無料の色",
+    palettePaid: "有料の色",
+    tools: "ツール",
+    toolPencil: "鉛筆", toolPencilTitle: "鉛筆 (P)",
+    toolBrush: "ブラシ", toolBrushTitle: "ブラシ (H)",
+    toolEraser: "消しゴム", toolEraserTitle: "消しゴム (E)",
+    toolPicker: "スポイト", toolPickerTitle: "スポイト (I)",
+    toolFill: "塗りつぶし", toolFillTitle: "塗りつぶし (B)",
+    toolLine: "線", toolLineTitle: "線 (L)",
+    toolRect: "四角", toolRectTitle: "四角形 (R)",
+    toolRectF: "四角+", toolRectFTitle: "塗りつぶし四角形 (Shift+R)",
+    toolCirc: "円", toolCircTitle: "楕円/円 (O)",
+    toolCircF: "円+", toolCircFTitle: "塗りつぶし楕円 (Shift+O)",
+    undo: "元に戻す", undoTitle: "元に戻す (Ctrl+Z)",
+    redo: "やり直す", redoTitle: "やり直す (Ctrl+Y)",
+    clear: "クリア",
+    gridSize: "グリッドサイズ",
+    zoom: "ズーム",
+    showGrid: "グリッドを表示",
+    genPlaceholder: "例: レトロ8ビットの宇宙船、右向き、透明背景",
+    generate: "生成",
+    uploadImage: "画像をアップロード",
+    hideGrid: "グリッドを非表示",
+    customCursors: "カスタムカーソル",
+    imageNotFound: "画像が見つかりません。",
+    imageSaved: "ギャラリーに追加しました！",
+    saveFailed: "画像の保存に失敗しました。",
+    storageFull: "ブラウザのストレージがいっぱいです。ギャラリーからいくつか削除して再試行してください。",
+    copied: "クリップボードにコピーしました！",
+    cleared: "キャンバスをクリアしました。",
+    nothingSelected: "何も選択されていません。"
   },
   nl: {
     galleryPageTitle: "Mijn Galerij – Wplace Color Converter",
@@ -798,6 +1138,40 @@ window.translations = {
     viewerNamePlaceholder: "Naam…",
     viewerTagsPlaceholder: "Tags…",
     viewerCollectionPlaceholder: "Collectie",
+    studioPageTitle: "Studio – Wplace Kleurconverter",
+    studioTitle: "Studio",
+    genNotice: "Gebruikt de openbare Pollinations-afbeeldingsdienst. Prompts kunnen daar openbaar worden gelogd. Geen account vereist.",
+    paletteFree: "Gratis kleuren",
+    palettePaid: "Betaalde kleuren",
+    tools: "Hulpmiddelen",
+    toolPencil: "Potlood", toolPencilTitle: "Potlood (P)",
+    toolBrush: "Kwast", toolBrushTitle: "Kwast (H)",
+    toolEraser: "Gum", toolEraserTitle: "Gum (E)",
+    toolPicker: "Pipet", toolPickerTitle: "Pipet (I)",
+    toolFill: "Vullen", toolFillTitle: "Vullen (B)",
+    toolLine: "Lijn", toolLineTitle: "Lijn (L)",
+    toolRect: "Rechthoek", toolRectTitle: "Rechthoek (R)",
+    toolRectF: "Rechthoek+", toolRectFTitle: "Gevulde rechthoek (Shift+R)",
+    toolCirc: "Cirkel", toolCircTitle: "Ellips/Cirkel (O)",
+    toolCircF: "Cirkel+", toolCircFTitle: "Gevulde ellips (Shift+O)",
+    undo: "Ongedaan maken", undoTitle: "Ongedaan maken (Ctrl+Z)",
+    redo: "Opnieuw", redoTitle: "Opnieuw (Ctrl+Y)",
+    clear: "Wissen",
+    gridSize: "Rastergrootte",
+    zoom: "Zoom",
+    showGrid: "Raster weergeven",
+    genPlaceholder: "bijv.: retro 8-bit ruimteschip naar rechts, transparante achtergrond",
+    generate: "Genereren",
+    uploadImage: "Afbeelding uploaden",
+    hideGrid: "Raster verbergen",
+    customCursors: "Aangepaste cursors",
+    imageNotFound: "Afbeelding niet gevonden.",
+    imageSaved: "Toegevoegd aan galerij!",
+    saveFailed: "Afbeelding kon niet worden opgeslagen.",
+    storageFull: "De browseropslag is vol. Verwijder enkele items uit de galerij en probeer opnieuw.",
+    copied: "Gekopieerd naar klembord!",
+    cleared: "Canvas gewist.",
+    nothingSelected: "Niets geselecteerd."
   },
   ru: {
     galleryPageTitle: "Моя Галерея – Wplace Color Converter",
@@ -843,6 +1217,40 @@ window.translations = {
     viewerNamePlaceholder: "Имя…",
     viewerTagsPlaceholder: "Теги…",
     viewerCollectionPlaceholder: "Коллекция",
+    studioPageTitle: "Студия – Wplace Конвертер цветов",
+    studioTitle: "Студия",
+    genNotice: "Использует публичный сервис изображений Pollinations. Подсказки могут записываться этим сервисом публично. Аккаунт не требуется.",
+    paletteFree: "Бесплатные цвета",
+    palettePaid: "Платные цвета",
+    tools: "Инструменты",
+    toolPencil: "Карандаш", toolPencilTitle: "Карандаш (P)",
+    toolBrush: "Кисть", toolBrushTitle: "Кисть (H)",
+    toolEraser: "Ластик", toolEraserTitle: "Ластик (E)",
+    toolPicker: "Пипетка", toolPickerTitle: "Пипетка (I)",
+    toolFill: "Заливка", toolFillTitle: "Заливка (B)",
+    toolLine: "Линия", toolLineTitle: "Линия (L)",
+    toolRect: "Прямоугольник", toolRectTitle: "Прямоугольник (R)",
+    toolRectF: "Прямоугольник+", toolRectFTitle: "Заполненный прямоугольник (Shift+R)",
+    toolCirc: "Круг", toolCircTitle: "Эллипс/Круг (O)",
+    toolCircF: "Круг+", toolCircFTitle: "Заполненный эллипс (Shift+O)",
+    undo: "Отменить", undoTitle: "Отменить (Ctrl+Z)",
+    redo: "Повторить", redoTitle: "Повторить (Ctrl+Y)",
+    clear: "Очистить",
+    gridSize: "Размер сетки",
+    zoom: "Масштаб",
+    showGrid: "Показать сетку",
+    genPlaceholder: "напр.: ретро 8-битный космический корабль вправо, прозрачный фон",
+    generate: "Сгенерировать",
+    uploadImage: "Загрузить изображение",
+    hideGrid: "Скрыть сетку",
+    customCursors: "Пользовательские курсоры",
+    imageNotFound: "Изображение не найдено.",
+    imageSaved: "Добавлено в галерею!",
+    saveFailed: "Не удалось сохранить изображение.",
+    storageFull: "Хранилище браузера переполнено. Удалите некоторые элементы из галереи и попробуйте снова.",
+    copied: "Скопировано в буфер обмена!",
+    cleared: "Холст очищен.",
+    nothingSelected: "Ничего не выбрано."
   },
   tr: {
     galleryPageTitle: "Galerim – Wplace Color Converter",
@@ -888,5 +1296,197 @@ window.translations = {
     viewerNamePlaceholder: "Ad…",
     viewerTagsPlaceholder: "Etiketler…",
     viewerCollectionPlaceholder: "Koleksiyon",
-  }
-};
+    studioPageTitle: "Stüdyo – Wplace Renk Dönüştürücü",
+    studioTitle: "Stüdyo",
+    genNotice: "Genel Pollinations görsel hizmetini kullanır. Promptlar bu hizmet tarafından herkese açık olarak kaydedilebilir. Hesap gerekli değildir.",
+    paletteFree: "Ücretsiz Renkler",
+    palettePaid: "Ücretli Renkler",
+    tools: "Araçlar",
+    toolPencil: "Kalem", toolPencilTitle: "Kalem (P)",
+    toolBrush: "Fırça", toolBrushTitle: "Fırça (H)",
+    toolEraser: "Silgi", toolEraserTitle: "Silgi (E)",
+    toolPicker: "Damlalık", toolPickerTitle: "Damlalık (I)",
+    toolFill: "Doldur", toolFillTitle: "Doldur (B)",
+    toolLine: "Çizgi", toolLineTitle: "Çizgi (L)",
+    toolRect: "Dikdörtgen", toolRectTitle: "Dikdörtgen (R)",
+    toolRectF: "Dikdörtgen+", toolRectFTitle: "Dolu dikdörtgen (Shift+R)",
+    toolCirc: "Daire", toolCircTitle: "Elips/Daire (O)",
+    toolCircF: "Daire+", toolCircFTitle: "Dolu elips (Shift+O)",
+    undo: "Geri al", undoTitle: "Geri al (Ctrl+Z)",
+    redo: "Yinele", redoTitle: "Yinele (Ctrl+Y)",
+    clear: "Temizle",
+    gridSize: "Izgara boyutu",
+    zoom: "Yakınlaştırma",
+    showGrid: "Izgarayı göster",
+    genPlaceholder: "örn.: retro 8-bit uzay gemisi sağa bakıyor, şeffaf arka plan",
+    generate: "Üret",
+    uploadImage: "Resim yükle",
+    hideGrid: "Izgarayı gizle",
+    customCursors: "Özel imleçler",
+    imageNotFound: "Resim bulunamadı.",
+    imageSaved: "Galeriye eklendi!",
+    saveFailed: "Resim kaydedilemedi.",
+    storageFull: "Tarayıcı depolama alanı dolu. Galeriden bazı öğeleri kaldırıp tekrar deneyin.",
+    copied: "Panoya kopyalandı!",
+    cleared: "Tuval temizlendi.",
+    nothingSelected: "Hiçbir şey seçilmedi."
+  },
+  it: {
+    galleryPageTitle: "La mia Galleria – Wplace Color Converter",
+    pageTitle: "Wplace Convertitore di Colori",
+    home: "Home",
+    gallery: "Galleria",
+    galleryTitle: "La tua Galleria di immagini",
+    deleteAll: "Elimina tutto",
+    exportGallery: "Esporta galleria",
+    importGallery: "Importa galleria",
+    exportSelected: "Esporta selezionate",
+    deleteSelected: "Elimina selezionate",
+    searchPlaceholder: "Cerca…",
+    tagFilter: "Filtro tag",
+    sortNewest: "Più recenti",
+    sortOldest: "Più vecchie",
+    sortNameAsc: "Nome A→Z",
+    sortSizeDesc: "Più grandi",
+    emptyGallery: "Ancora nessuna immagine",
+    goConvert: "Vai a convertire",
+    personalGallery: "La tua galleria personale",
+    clearAllPrompt: "Eliminare davvero tutte le immagini?",
+    yes: "Sì",
+    cancel: "Annulla",
+    save: "Salva",
+    download: "Scarica",
+    delete: "Elimina",
+    selected: "selezionate",
+    allCollections: "Tutte le collezioni",
+    deleteOnePrompt: "Eliminare questa immagine?",
+    deleteSelectedPrompt: "Eliminare le immagini selezionate?",
+    noImagesExport: "Nessuna immagine da esportare.",
+    exportedAll: "Galleria esportata",
+    noSelected: "Nessuna immagine selezionata.",
+    exportedSelected: "Selezionate esportate",
+    imported: "Immagini importate",
+    saved: "Salvato",
+    deleted: "Eliminato",
+    deleteFailed: "Eliminazione non riuscita",
+    selectionCount: "0 selezionate",
+    collectionFilter: "Filtro collezioni",
+    sort: "Ordina",
+    viewerNamePlaceholder: "Nome…",
+    viewerTagsPlaceholder: "Tag…",
+    viewerCollectionPlaceholder: "Collezione",
+    studioPageTitle: "Studio – Wplace Convertitore di Colori",
+    studioTitle: "Studio",
+    genNotice: "Usa l'endpoint pubblico di immagini Pollinations. I prompt possono essere registrati pubblicamente da quel servizio. Non è richiesto alcun account.",
+    paletteFree: "Colori gratuiti",
+    palettePaid: "Colori a pagamento",
+    tools: "Strumenti",
+    toolPencil: "Matita", toolPencilTitle: "Matita (P)",
+    toolBrush: "Pennello", toolBrushTitle: "Pennello (H)",
+    toolEraser: "Gomma", toolEraserTitle: "Gomma (E)",
+    toolPicker: "Contagocce", toolPickerTitle: "Contagocce (I)",
+    toolFill: "Riempi", toolFillTitle: "Riempi (B)",
+    toolLine: "Linea", toolLineTitle: "Linea (L)",
+    toolRect: "Rettangolo", toolRectTitle: "Rettangolo (R)",
+    toolRectF: "Rettangolo+", toolRectFTitle: "Rettangolo pieno (Shift+R)",
+    toolCirc: "Cerchio", toolCircTitle: "Ellisse/Cerchio (O)",
+    toolCircF: "Cerchio+", toolCircFTitle: "Ellisse piena (Shift+O)",
+    undo: "Annulla", undoTitle: "Annulla (Ctrl+Z)",
+    redo: "Ripeti", redoTitle: "Ripeti (Ctrl+Y)",
+    clear: "Pulisci",
+    gridSize: "Dimensione griglia",
+    zoom: "Zoom",
+    showGrid: "Mostra griglia",
+    genPlaceholder: "es.: astronave retrò 8-bit rivolta a destra, sfondo trasparente",
+    generate: "Genera",
+    uploadImage: "Carica immagine",
+    hideGrid: "Nascondi griglia",
+    customCursors: "Cursori personalizzati",
+    imageNotFound: "Immagine non trovata.",
+    imageSaved: "Aggiunta alla galleria!",
+    saveFailed: "Impossibile salvare l'immagine.",
+    storageFull: "La memoria del browser è piena. Rimuovi alcuni elementi dalla galleria e riprova.",
+    copied: "Copiato negli appunti!",
+    cleared: "Canvas pulito.",
+    nothingSelected: "Niente selezionato."
+  },
+  "zh-CN": {
+    galleryPageTitle: "我的图库 – Wplace 颜色转换器",
+    pageTitle: "Wplace 颜色转换器",
+    home: "首页",
+    gallery: "图库",
+    galleryTitle: "你的图片图库",
+    deleteAll: "全部删除",
+    exportGallery: "导出图库",
+    importGallery: "导入图库",
+    exportSelected: "导出已选",
+    deleteSelected: "删除已选",
+    searchPlaceholder: "搜索…",
+    tagFilter: "标签筛选",
+    sortNewest: "最新优先",
+    sortOldest: "最旧优先",
+    sortNameAsc: "名称 A→Z",
+    sortSizeDesc: "最大",
+    emptyGallery: "尚无图片",
+    goConvert: "去转换",
+    personalGallery: "你的个人图库",
+    clearAllPrompt: "确定要删除所有图片吗？",
+    yes: "是",
+    cancel: "取消",
+    save: "保存",
+    download: "下载",
+    delete: "删除",
+    selected: "已选",
+    allCollections: "全部合集",
+    deleteOnePrompt: "删除此图片？",
+    deleteSelectedPrompt: "删除所选图片？",
+    noImagesExport: "没有可导出的图片。",
+    exportedAll: "已导出图库",
+    noSelected: "未选择图片。",
+    exportedSelected: "已导出所选",
+    imported: "已导入图片",
+    saved: "已保存",
+    deleted: "已删除",
+    deleteFailed: "删除失败",
+    selectionCount: "已选 0",
+    collectionFilter: "合集筛选",
+    sort: "排序",
+    viewerNamePlaceholder: "名称…",
+    viewerTagsPlaceholder: "标签…",
+    viewerCollectionPlaceholder: "合集",
+    studioPageTitle: "工作室 – Wplace 颜色转换器",
+    studioTitle: "工作室",
+    genNotice: "使用 Pollinations 公共图片服务。该服务可能会公开记录你的提示词。无需账户。",
+    paletteFree: "免费颜色",
+    palettePaid: "付费颜色",
+    tools: "工具",
+    toolPencil: "铅笔", toolPencilTitle: "铅笔 (P)",
+    toolBrush: "画笔", toolBrushTitle: "画笔 (H)",
+    toolEraser: "橡皮", toolEraserTitle: "橡皮 (E)",
+    toolPicker: "吸管", toolPickerTitle: "吸管 (I)",
+    toolFill: "填充", toolFillTitle: "填充 (B)",
+    toolLine: "直线", toolLineTitle: "直线 (L)",
+    toolRect: "矩形", toolRectTitle: "矩形 (R)",
+    toolRectF: "矩形+", toolRectFTitle: "填充矩形 (Shift+R)",
+    toolCirc: "圆形", toolCircTitle: "椭圆/圆 (O)",
+    toolCircF: "圆形+", toolCircFTitle: "填充椭圆 (Shift+O)",
+    undo: "撤销", undoTitle: "撤销 (Ctrl+Z)",
+    redo: "重做", redoTitle: "重做 (Ctrl+Y)",
+    clear: "清空",
+    gridSize: "网格大小",
+    zoom: "缩放",
+    showGrid: "显示网格",
+    genPlaceholder: "例如：复古 8 位右朝向的飞船，透明背景",
+    generate: "生成",
+    uploadImage: "上传图片",
+    hideGrid: "隐藏网格",
+    customCursors: "自定义光标",
+    imageNotFound: "未找到图像。",
+    imageSaved: "已添加到图库！",
+    saveFailed: "保存图像失败。",
+    storageFull: "浏览器存储已满。请从图库中删除一些项目后重试。",
+    copied: "已复制到剪贴板！",
+    cleared: "画布已清空。",
+    nothingSelected: "未选择任何内容。"
+  },
+  };
