@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="he">
 <head>
 <meta charset="UTF-8">
-<meta property="og:title" content="Wplace Kleurenconverter">
-<meta property="og:description" content="Een open-source en veilige website die de kleuren van je afbeeldingen en pixelkunst omzet naar die beschikbaar zijn in Wplace, met schalen, vertalingen en nog veel meer...">
-<meta name="description" content="Een open-source en veilige website die de kleuren van je afbeeldingen en pixelkunst omzet naar die beschikbaar zijn in Wplace, met schalen, vertalingen en nog veel meer..." />
+<meta property="og:title" content="ממיר צבעים Wplace">
+<meta property="og:description" content="אתר אינטרנט קוד פתוח ובטוח הממיר צבעים בתמונות ובפיקסל ארט שלכם לצבעים הזמינים ב-Wplace, עם שינוי קנה מידה, תרגומים ועוד הרבה...">
+<meta name="description" content="אתר אינטרנט קוד פתוח ובטוח הממיר צבעים בתמונות ובפיקסל ארט שלכם לצבעים הזמינים ב-Wplace, עם שינוי קנה מידה, תרגומים ועוד הרבה..." />
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/nl/">
+<meta property="og:url" content="https://pepoafonso.github.io/color_converter_wplace/he/">
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#D60270">
 
-<title>Wplace Kleurenconverter</title>
+<title>ממיר צבעים Wplace</title>
 <!-- Favicon -->
 <link rel="icon" href="../favicon.png" type="image/png" sizes="32x32">
 <link rel="icon" href="../favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png" sizes="180x180">
 
-<link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/nl/">
+<link rel="canonical" href="https://pepoafonso.github.io/color_converter_wplace/he/">
 
 <!-- hreflang links -->
 <link rel="alternate" hreflang="en"    href="https://pepoafonso.github.io/color_converter_wplace/" />
@@ -24,6 +24,7 @@
 <link rel="alternate" hreflang="de"    href="https://pepoafonso.github.io/color_converter_wplace/de/" />
 <link rel="alternate" hreflang="es"    href="https://pepoafonso.github.io/color_converter_wplace/es/" />
 <link rel="alternate" hreflang="fr"    href="https://pepoafonso.github.io/color_converter_wplace/fr/" />
+<link rel="alternate" hreflang="he"    href="https://pepoafonso.github.io/color_converter_wplace/he/" />
 <link rel="alternate" hreflang="uk"    href="https://pepoafonso.github.io/color_converter_wplace/uk/" />
 <link rel="alternate" hreflang="vi"    href="https://pepoafonso.github.io/color_converter_wplace/vi/" />
 <link rel="alternate" hreflang="pl"    href="https://pepoafonso.github.io/color_converter_wplace/pl/" />
@@ -33,11 +34,18 @@
 <link rel="alternate" hreflang="ru"    href="https://pepoafonso.github.io/color_converter_wplace/ru/" />
 <link rel="alternate" hreflang="tr"    href="https://pepoafonso.github.io/color_converter_wplace/tr/" />
 <link rel="alternate" hreflang="it"    href="https://pepoafonso.github.io/color_converter_wplace/it/" />
-<link rel="alternate" hreflang="zh-CN"    href="https://pepoafonso.github.io/color_converter_wplace/zh-CN/" />
+<link rel="alternate" hreflang="zh-CN" href="https://pepoafonso.github.io/color_converter_wplace/zh-CN/" />
+<link rel="alternate" hreflang="he"    href="https://pepoafonso.github.io/color_converter_wplace/he/" />
 <link rel="alternate" hreflang="x-default" href="https://pepoafonso.github.io/color_converter_wplace/" />
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../main.css" />
+<style>
+body[lang="he"] {
+  font-family: 'Heebo', 'Poppins', sans-serif;
+}
+</style>
 </head>
 <body class="home">
 <div id="global-toast"></div>
@@ -46,20 +54,20 @@
   <div class="container header-inner">
     <div id="menuBackdrop" class="menu-backdrop" hidden></div>
     <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
-      <nav class="mobile-menu-inner" aria-label="Mobile">
-        <a class="menu-item" href="../studio.html" data-keep-lang>Studio</a>
-        <a class="menu-item" href="../gallery.html" data-keep-lang>Galerij</a>
+      <nav class="mobile-menu-inner" aria-label="ניווט נייד">
+        <a class="menu-item" href="../studio.html" data-keep-lang>סטודיו</a>
+        <a class="menu-item" href="../gallery.html" data-keep-lang>גלריה</a>
       </nav>
     </div>
 
     <a class="brand" href="../">
       <img src="../favicon.png" alt="" class="brand-mark" />
-      <span class="brand-name">Wplace Kleurenconverter</span>
+      <span class="brand-name">ממיר צבעים Wplace</span>
     </a>
 
-    <nav class="primary-nav" aria-label="Primary">
-      <a class="nav-link" href="../studio.html" data-keep-lang>Studio</a>
-      <a class="nav-link" href="../gallery.html" data-keep-lang>Galerij</a>
+    <nav class="primary-nav" aria-label="ראשי">
+      <a class="nav-link" href="../studio.html" data-keep-lang>סטודיו</a>
+      <a class="nav-link" href="../gallery.html" data-keep-lang>גלריה</a>
     </nav>
 
     <div class="nav-tools">
@@ -69,81 +77,83 @@
         <option value="de">🇩🇪 Deutsch</option>
         <option value="es">🇪🇸 Español</option>
         <option value="fr">🇫🇷 Français</option>
-        <option value="he">🇮🇱 עברית</option>
+        <option value="he" selected>🇮🇱 עברית</option>
         <option value="uk">🇺🇦 Українська</option>
         <option value="vi">🇻🇳 Tiếng Việt</option>
         <option value="pl">🇵🇱 Polski</option>
         <option value="ja">🇯🇵 日本語</option>
         <option value="de-CH">🇨🇭 Deutsch (Schweiz)</option>
-        <option value="nl" selected>🇳🇱 Nederlands</option>
+        <option value="nl">🇳🇱 Nederlands</option>
         <option value="ru">🇷🇺 Русский</option>
         <option value="tr">🇹🇷 Türkçe</option>
         <option value="it">🇮🇹 Italiano</option>
         <option value="zh-CN">🇨🇳 简体中文</option>
       </select>
 
-      <button class="nav-burger" aria-label="Menu openen" aria-expanded="false">
+      <button class="nav-burger" aria-label="פתח תפריט" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
   </div>
 </header>
 
-<main class="container app">
-  <section class="panel-left">
-    <div class="card">
-      <div class="custom-upload">
-        <input type="file" id="upload" accept="image/*">
-        <label for="upload" class="upload-box">
-          <div class="upload-icon">📤</div>
-          <div class="upload-text">
-            <strong>Afbeelding uploaden</strong>
-            <span>Klik, plak of sleep & neerzetten</span>
-          </div>
-        </label>
+  <!-- Page -->
+  <main class="container app">
+    <!-- Left column: Controls -->
+    <section class="panel-left">
+      <div class="card">
+        <div class="custom-upload">
+          <input type="file" id="upload" accept="image/*">
+          <label for="upload" class="upload-box">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">
+              <strong data-i18n="uploadStrong">העלה תמונה</strong>
+              <span data-i18n="uploadSpan">לחץ, הדבק או גרור ושחרר</span>
+            </div>
+          </label>
+        </div>
       </div>
-    </div>
 
     <div class="card">
       <div class="scroll-bar">
-        <label for="scaleRange">Schaal</label>
+        <label for="scaleRange">קנה מידה</label>
         <input type="range" id="scaleRange" min="0.001" max="5" step="any" value="1">
         <span id="scaleValue">1.00x</span>
       </div>
 
       <div class="dimensions">
         <div class="dimension-input">
-          <label for="widthInput">Breedte</label>
+          <label for="widthInput">רוחב</label>
           <input type="number" id="widthInput">
         </div>
         <div class="dimension-input">
-          <label for="heightInput">Hoogte</label>
+          <label for="heightInput">גובה</label>
           <input type="number" id="heightInput">
         </div>
         <div class="dimension-input">
-          <label>Oppervlakte</label>
+          <label>שטח</label>
           <input type="number" id="area" readonly>
         </div>
       </div>
 
       <div style="display:flex; justify-content:center; align-items:center;margin: 20px 0 10px 0; flex-wrap:wrap; width:100%;">
         <button id="ditherButton" class="btn btn-toggle active">
-          Dithering (Aanbevolen)
+          דיתרינג (מומלץ)
         </button>
       </div>
 
       <details id="adv-options" class="adv-card">
         <summary>
-          <span>Geavanceerde opties</span>
+          <span>אפשרויות מתקדמות</span>
         </summary>
 
         <div class="adv-content">
           <button id="transparentButton" class="btn btn-toggle" type="button">
-            Halftransparante pixels verbergen
+            הסתר פיקסלים חצי שקופים
           </button>
 
           <button id="opt-toggle-hide-ui" class="btn btn-toggle" type="button">
-            Kleurenbediening weergeven/verbergen (ogen)
+            הצג/הסתר בקרי צבע (עיניים)
           </button>
         </div>
       </details>
@@ -156,32 +166,32 @@
     </div>
 
     <div class="scroll-bar">
-      <label for="zoomRange">Zoom</label>
+      <label for="zoomRange">זום</label>
       <input type="range" id="zoomRange" min="0.01" max="5" step="0.01" value="1">
       <span id="zoomValue">1.00x</span>
     </div>
     <div>
       <small style="display:block; color:#888; font-size:0.85em;">
-        Ctrl + scroll om te zoomen
+        Ctrl + גלגלת עכבר לזום
       </small>
     </div>
 
     <div class="actions">
-      <a id="download" class="btn" href="#">Afbeelding downloaden</a>
-      <button id="clipboard" class="btn">Kopiëren naar klembord</button>
-      <button id="addToGallery" class="btn">Toevoegen aan galerij</button>
+      <a id="download" class="btn" href="#">הורד תמונה</a>
+      <button id="clipboard" class="btn">העתק ללוח</button>
+      <button id="addToGallery" class="btn">הוסף לגלריה</button>
     </div>
   </div>
 
   <section class="panel panel-colors">
     <div class="card">
       <div class="colors-card-head">
-        <p class="section-title">Gratis kleuren</p>
-        <button id="hide-toggle-free" class="btn-eye" title="Alle gratis kleuren verbergen"></button>
+        <p class="section-title">צבעים חינמיים</p>
+        <button id="hide-toggle-free" class="btn-eye" title="הסתר את כל הצבעים החינמיים"></button>
       </div>
 
       <button class="btn" data-type="free" id="unselect-all-free">
-        Alle gratis kleuren deselecteren
+        בטל בחירה של כל הצבעים החינמיים
       </button>
 
       <div id="colors-free" class="chips">
@@ -222,15 +232,15 @@
     <div class="card">
       <div class="colors-card-head">
         <div class="head-left">
-          <span class="section-title">Betaalde kleuren</span>
+          <span class="section-title">צבעים בתשלום</span>
           <span class="section-title" id="paid-total-cost"></span>
         </div>
-        <button id="hide-toggle-paid" class="btn-eye" title="Alle betaalde kleuren verbergen"></button>
+        <button id="hide-toggle-paid" class="btn-eye" title="הסתר את כל הצבעים בתשלום"></button>
       </div>
       <button class="btn" data-type="paid" id="select-all-paid">
-        Alle 💧betaalde kleuren selecteren
+        בחר את כל הצבעים 💧בתשלום
       </button>
-      <div id="colors-paid" class="chips">
+        <div id="colors-paid" class="chips">
 	<button id="32" class="toggle-color" data-type=paid style="background: rgb(170,170,170);" title="Medium Gray: rgb(170, 170, 170)">Medium Gray</button>
     <button id="33" class="toggle-color" data-type=paid style="background: rgb(165,14,30); color: #fff;" title="Dark Red: rgb(165,14,30)">Dark Red</button>
     <button id="34" class="toggle-color" data-type=paid style="background: rgb(250,128,114);" title="Light Red: rgb(250, 128, 114)">Light Red</button>
@@ -267,25 +277,25 @@
     </div>
 
     <div>
-      <p class="section-title">Sorteren op</p>
+      <p class="section-title">מיין לפי</p>
       <input type="radio" name="colors-list-order" id="original" value="original" checked>
-      <label for="original">Origineel</label>
+      <label for="original">מקורי</label>
 
       <input type="radio" name="colors-list-order" id="used" value="used">
-      <label for="used">Meest gebruikt</label>
+      <label for="used">הנפוצים ביותר</label>
     </div>
     
     <!-- Columns chooser / mode -->
     <div>
-      <p class="section-title">Kolommen</p>
+      <p class="section-title">עמודות</p>
 
       <input type="radio" name="color-columns-mode" id="color-columns-dynamic" value="dynamic" checked>
-      <label for="color-columns-dynamic">Dynamisch</label>
+      <label for="color-columns-dynamic">דינמי</label>
 
       <input type="radio" name="color-columns-mode" id="color-columns-manual" value="manual">
-      <label for="color-columns-manual">Handmatig</label>
+      <label for="color-columns-manual">ידני</label>
       
-      <select style="margin-left: 8px;" id="color-columns-manual-count" aria-label="Color list columns">
+      <select style="margin-right: 8px;" id="color-columns-manual-count" aria-label="עמודות רשימת צבעים">
         <option value="1">1</option>
         <option value="2" selected>2</option>
         <option value="3">3</option>
@@ -300,9 +310,9 @@
 <footer class="site-footer">
   <div class="container footer-content">
     <small>
-      &copy; Wplace Kleurenconverter —
+      &copy; ממיר צבעים Wplace —
       <a href="https://github.com/PEPOAFONSO/color_converter_wplace/blob/main/LICENSE" class="license">
-        Copyright (c) <span id="year"></span> PEPOAFONSO
+        זכויות יוצרים (c) <span id="year"></span> PEPOAFONSO
       </a>
     </small>
 
