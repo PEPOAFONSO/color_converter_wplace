@@ -549,6 +549,7 @@ h2#title, h2 {
   height:auto !important;
   max-width:none !important;
   aspect-ratio:auto !important;
+  image-rendering: pixelated;
 }
 
 .actions {
